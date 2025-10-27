@@ -1,0 +1,1179 @@
+---
+title: "Projekt z zakresu analizy danych - wpływ rozkładu danych na MSE regresji"
+author: "Diana Morzhak, Mateusz Walo, Dominika Zydorczyk"
+format: 
+  html: 
+    embed-resources: true
+editor: visual
+---
+
+# Wstęp i krótkie strzeszczenie projektu
+
+blablabla
+
+do zrobienia:
+
+-   dodać title do wykresow
+
+-   przeniesc komentarze z poziomu kodu do tekstu
+
+-   sformatowac niektore komorki tak, aby ich zawartosc nie wyswietlala sie
+
+-   rozszerzyc charakterystyke danych przy ich generowaniu
+
+Rozpatrujemy wpływ rozkładu zmiennych objaśniającyh na błąd średniokwadratowy (MSE) w następującym modelu regresji nieliniowej:
+
+$$Y = 0.5 \ + \ X_1 \ + \ 0.6X_2^2 \ + \ \epsilon
+$$
+
+gdzie $X_1$ i $X_2$ są zmiennymi losowymi pochodzącymi z rozkładów zależnych od rozpatrywanej sytuacji (patrz niżej), natomiast $\epsilon$ jest szumem pochodzącym z rozkładu $N(0,0.1)$ - jest tak, ponieważ chcemy się skupić wyłącznie na wpływie rozkładu predykatorów. MSE definiujemy następująco:
+
+$$
+MSE=\frac{1}{n} \sum_{i=1}^n(Y_i-\hat{Y_i})^2
+$$
+
+gdzie $Y=(Y_1, Y_2, ..., Y_n)$ jest wektorem wartości obserwowanych, natomiast $\hat{Y}=(Y_1, Y_2, ..., Y_n)$ jest wektorem wartości przewidywanych przez model, a $n$ oznacza liczbę obserwacji w zbiorze danych. Dla całego projektu przyjmujemy, że $n = 120$ , co pozwoli nam na bezpośrednie porównywanie uzyskiwanych wyników.
+
+## Lista rozpatrywanych przypadków
+
+Poniżej przedstawiono wszystkie przypadki, w których generowane są zmienne losowe $X_1$ i $X_2$ . Opisano zarówno przypadki niezależne, jak i zależne, z uwzględnieniem możliwej zależności liniowej, nieliniowej tych zmiennych oraz wpływu zmiennej ukrytej na nie:
+
+### a) Zmienne niezależne
+
+1.  **double_snorm**\
+    W tym przypadku zarówno $X_1$ , jak i $X_2$ pochodzą z rozkładu normalnego standaryzowanego: $X_1\sim \mathcal{N}(0,1), \ X_2 \sim \mathcal{N}(0,1)$
+
+2.  **double_unif_narrow**\
+    Zarówno $X_1$ , jak i $X_2$ są losowane z wąskiego rozkładu jednostajnego: $X_1 \sim \mathrm{U}(-3,3), X_2 \sim \mathrm{U}(-3,3)$
+
+3.  **double_unif_wide**\
+    W tym przypadku zmienne są losowane z szerszego rozkładu jednostajnego: $X_1\sim \mathrm{U}(-5,5), X_2 \sim \mathrm{U}(-5,5)$
+
+4.  **norm_exp**\
+    Zmienna $X_1$ ma rozkład normalny z większym odchyleniem standardowym, a $X_2$ pochodzi z rozkładu wykładniczego: $X_1 \sim \mathcal{N}(0, 2.9), \quad X_2 \sim \mathrm{Exp}(\lambda = 1.2)$
+
+5.  **snorm_exp**\
+    Tutaj $X_1$ ma rozkład normalny standaryzowany, a $X_2$ - wykładniczy: $X_1 \sim \mathcal{N}(0,1), \quad X_2 \sim \mathrm{Exp}(\lambda = 1.2)$
+
+6.  **pois_snorm**\
+    Zmienna $X_1$ jest dyskretna z rozkładu Poisson'a, natomiast $X_2$ ma rozkład normalny standaryzowany: $X_1 \sim \mathrm{Pois}(\lambda = 2), \quad X_2 \sim \mathcal{N}(0,1)$
+
+7.  **bimodal_snorm**\
+    W tym przypadku $X_1$ ma rozkład bimodalny, a $X_2$ - normalny standaryzowany: $X_1 \sim 0.43\cdot \mathcal{N}(-3,0.8) + 0.57\cdot \mathcal{N}(3,0.8), \quad X_2 \sim \mathcal{N}(0,1)$
+
+8.  **exp_norm**\
+    Zmienna $X_1$ pochodzi z rozkładu wykładniczego, a $X_2$ z normalnego: $X_1 \sim \mathrm{Exp}(\lambda = 1.2), \quad X_2 \sim \mathcal{N}(0, 2.9)$
+
+9.  **pois_norm**\
+    W tym przypadku $X_1$ pochodzi z rozkładu Poisson'a, a $X_2$ z rozkładu normalnego: $X_1 \sim \mathrm{Pois}(\lambda = 2), \quad X_2 \sim \mathcal{N}(0, 2.9)$
+
+10. **t_snorm**\
+    Zmienna $X_1$ pochodzi z rozkładu t-Studenta z 3 stopniami swobody, a $X_2$ z rozkładu normalnego standaryzowanego: $X_1 \sim t(df=3), \quad X_2 \sim \mathcal{N}(0,1)$
+
+11. **t_norm**\
+    Zmienna $X_1$ pochodzi z rozkładu t-Studenta, a $X_2$ z normalnego rozkładu o większej wariancji: $X_1 \sim t(df=3), \quad X_2 \sim \mathcal{N}(0,2.9)$
+
+12. **t_exp**\
+    Zmienna $X_1$ pochodzi z rozkładu t-Studenta, natomiast $X_2$ z rozkładu wykładniczego: $X_1 \sim t(df=3), \quad X_2 \sim \mathrm{Exp}(\lambda = 1.2)$
+
+### b) Zmienne zależne
+
+#### i) Zależność liniowa
+
+-   **linear_corr_snorm**\
+    Obie zmienne pochodzą z rozkładu normalnego standaryzowanego, ale wprowadzona jest między nimi korelacja $\rho$ : $(X_1, X_2) \sim \mathcal{N}\Big(\mu =\begin{pmatrix}0\\0\end{pmatrix},\Sigma =\begin{pmatrix}1 & \rho \\ \rho & 1\end{pmatrix}\Big)$\
+    Taki przypadek pozwala badać wpływ liniowej zależności między predykatorami
+
+#### ii) Zależność nieliniowa
+
+-   **nonlinear_corr**\
+    Zmienna $X_2$ pochodzi z rozkładu normalnego standaryzowanego. Zmienna $X_1$ jest nieliniową funkcją zmiennej $X_2$ z dodatkiem szumu $\eta$ : $X_2 \sim \mathcal{N}(0,1), \quad X_1 = a \cdot e^{b X_2} + \eta, \quad \eta \sim \mathcal{N}(0,0.1)$\
+    Pozwala to na modelowanie przypadków, w których zależność między predykatorami jest wyraźnie nieliniowa
+
+### c) Zmienne zależne od zmiennej ukrytej Z
+
+-   **hidden_impact**\
+    Tutaj zarówno $X_1$ , jak i $X_2$ zależą od wspólnej zmiennej ukrytej $Z$ : $X_1 = 2.7 Z + 12, \quad X_2 = 1.4 Z + 15, \quad Z \sim \mathcal{N}(0,1)$\
+    Taki przypadek umożliwia zbadanie wpływu zmiennej ukrytej na obserwowane zmienne objaśniające
+
+Razem zbadamy 19 przypadków. Dla każdego z nich generować będziemy po 35 ramek danych, co da nam wystarczającą próbkę do porównywania wyników. Dla każdej z utworzonych ramek danych będziemy dopasowywać model regresji nieliniowej, zapiszemy uzyskane wyniki i porównamy je. Tym samym wyciągniemy najciekawsze informacje z wpływu różnych rozkładów predykatorów na wartość błędu średniokwadratowego tworzonej regresji.
+
+# 1. Generowanie danych
+
+## Funkcja jako narzędzie
+
+Wprowadzamy funkcję `Y_true` , która oblicza wartości wektora Y na podstawie wygenerowanych danych. W ten sposób tworzymy "prawdziwe, rzeczywiste" dane.
+
+Następnie definiujemy globalny `epsilon` oraz `eta` , aby ustalić deterministyczne ich wartości i aby te wartości nie wpływały mocno na wartość Y, co pozwoli nam na lepsze bezpośrednie porównanie wpływu właśnie rozkładów predykatorów, a nie błędów na wytwarzany MSE.
+
+Do generowania danych do każdego z wymienionych we wstępie przypadków rozkładu dannych zmiennych objaśniających wykorzystujemy funkcję `generate_data` . Uwzględnia ona wszystkie założenia rozpatrywanych przez nasz w tym projekcie scenariuszy. Generuje odpowiednie dane w zależności od wprowadzonego argumentu `case` (co tłumaczymy jako 'przypadek'). Następnie wygenerowane dane są zapisywane do ramki danych, która zawiera 4 kolumny:
+
+-   X1 - wartości pierwszej zmiennej objaśniającej
+
+-   X2 - wartości drugiej zmiennej objaśniającej
+
+-   Y - obliczone na podstawie wzoru (numer wzoru) wartości Y
+
+-   Eps - biały szum
+
+Funkcja zwraca tę ramkę danych oraz meta dane generatora rozkładu, czyli listę parametrów użytych podczas generowania danych. Parametry te można poznać poniżej. A zatem wynik funkcji `generate_data` to lista posiadająca dwa elementy:
+
+1.  df - wygenerowana ramka danych zgodnie z wybranym przypadkiem `case`
+2.  meta - meta dane przechowujące wartości parametrów użytych do generowania danych
+
+```{r}
+# wczytanie niezbędnych bibliotek
+library(dplyr)
+library(tidyverse)
+library(GGally)
+library(MASS)
+```
+
+```{r}
+# Funkcja służąca do obliczenia prawdziwych wartości Y
+Y_true <- function(x1, x2, epsilon){
+  return (0.5+x1+0.6*x2*x2+epsilon)
+}
+```
+
+```{r}
+# Globalna definicja szumu
+epsilon <- rnorm(120, sd = 0.1)
+# Globalna definicja szumu dla przypadku zmiennej zależnej
+eta <- rnorm(120, sd = 0.1)
+
+generate_data <- function(case, 
+                          n = 120, # liczba generowanych obserwacji
+                          rho = NULL, # współczynnik korelacji (przypadek zależności liniowej)
+                          lambda = 2, # lambda dla rozkładu Poisson'a
+                          exp_rate = 1.2, # intensywność dla rozkładu wykładniczego
+                          a = NULL, # wartość pierwszego współczynnika dla zależności nieliniowej
+                          b = NULL # wartość drugiego współczynnika dla zależności nieliniowej
+                          ){
+  
+# sprawdzamy, czy został podany obowiązkowy parametr dla danego przypadku generowania danych
+  needed <- function(param, name){
+    if(is.null(param)){
+      stop(sprintf("Przypadek '%s' wymaga argumentu '%s'", case, name))
+    }
+  }
+  
+  # przypadek, gdy oba predykatory mają rozkład normalny standaryzowany
+  if(case=="double_snorm"){
+    x1 <- rnorm(n)
+    x2 <- rnorm(n)
+  # Zmienne X_1 i X_2 pochodzą z rozkładu jednostajnego o parametrach (-3,3)
+  }else if(case == "double_unif_narrow"){
+    x1 <- runif(n, min = -3, max = 3)
+    x2 <- runif(n, min = -3, max = 3)
+  # Zmienne X_1 i X_2 pochodzą z rozkładu jednostajnego o parametrach (-5,5)
+  }else if(case == "double_unif_wide"){
+    x1 <- runif(n, min = -5, max = 5)
+    x2 <- runif(n, min = -5, max = 5)
+  # Zmienna X_1 pochodzi z rozkładu normalnego z większym odchyleniem standardowym,
+  # natomiast zmienna X_2 pochodzi z rozkładu wykładniczego z lambdą = 1.2 (parametr intensywności)
+  }else if(case == "norm_exp"){
+    needed(exp_rate,"exp_rate")
+    x1 <- rnorm(n, sd = 2.9)
+    x2 <- rexp(n,rate = exp_rate)
+  # Zmienna X_1 pochodzi z rozkładu normalnego standaryzowanego, a zmienna X_2
+  # z rozkładu wykładniczego o lambdzie równej 1.2
+  }else if(case == "snorm_exp"){
+    needed(exp_rate,"exp_rate")
+    x1 <- rnorm(n)
+    x2 <- rexp(n, rate = exp_rate)
+  # Zmienna X_1 pochodzi z rozkładu dyskretnego Poisson'a o lambdzie równej ,
+  # Zmienna X_2 pochodzi z rozkładu normalnego standaryzowanego
+  }else if(case == "pois_snorm"){
+    needed(lambda,"lambda")
+    x1 <- rpois(n,lambda = lambda)
+    x2 <- rnorm(n)
+  # Zmienna X_1 pochodzi z rozkładu bimodalnego, a zmienna X_2 z normalnego
+  # standaryzowanego
+  }else if(case == "bimodal_snorm"){
+    bimod_mean1 <- -3
+    bimod_mean2 <- 3
+    bimod_sd <- 0.8
+    p <- 0.43
+    u <- runif(n)
+    x1 <- ifelse(u<p, rnorm(n, bimod_mean1, bimod_sd), 
+                      rnorm(n,bimod_mean2,bimod_sd))
+    x2 <- rnorm(n)
+  #Przypadek, gdy zmienna X_1 pochodzi z rozkładu wykładniczego,
+  # a zmienna X_2 z rozkładu normalnego
+  }else if(case == "exp_norm"){
+    needed(exp_rate,"exp_rate")
+    x1 <- rexp(n, rate = exp_rate)
+    x2 <- rnorm(n, sd = 2.9)
+  #Przypadek, gdy X_1 pochodzi z rozkładu Poisson'a, 
+  # a X_2 z rozkładu normalnego
+  }else if(case == "pois_norm"){
+    needed(lambda,"lambda")
+    x1 <- rpois(n, lambda = lambda)
+    x2 <-  rnorm(n, sd = 2.9)
+  #X_1 pochodzi z rozkładu t-Studenta o trzech stopniach swobody,
+  # a X_2 z rozkładu normalnego standaryzowanego
+  }else if(case == "t_snorm"){
+    x1 <- rt(n,df = 3)
+    x2 <- rnorm(n)
+  #X_1 pochodzi z rozkładu t-Studenta o trzech stopniach swobody,
+  # a X_2 z rozkładu normalnego
+  }else if(case == "t_norm"){
+    x1 <- rt(n, df = 3)
+    x2 <- rnorm(n,sd = 2.9)
+  #X_1 pochodzi z rozkładu t-Studenta o trzech stopniach swobody,
+  # a X_2 z rozkładu wykładniczego
+  }else if(case == "t_exp"){
+    needed(exp_rate,"exp_rate")
+    x1 <- rt(n, df = 3)
+    x2 <- rexp(n, rate = exp_rate)
+  # Zmienne losowe X_1 i X_2 są liniowo zależne i pochodzą obie 
+  # z rozkładu normalnego standaryzowanego
+  }else if(case == "linear_corr_snorm"){
+    needed(rho,"rho")
+    sigma <- rbind(c(1,rho), c(rho,1)) #macierz kowariancji
+    mu <- c(0,0) #średnie rozkładów
+  # Zmienna X_1 jest nieliniowo zależna od zmiennej X_2
+  # a zmienna X_2 pochodzi z rozkładu normalnego standaryzowanego
+  }else if(case == "nonlinear_corr"){
+    needed(a,"a")
+    needed(b,"b")
+    x2 <- rnorm(n)
+    x1 <- a*exp(b*x2)+eta
+  }else if(case == "hidden_impact"){
+    z <- rnorm(n)
+    x1 <- 2.7*z + 12
+    x2 <- 1.4*z + 15
+  }
+  
+  meta <- list(case = case, n = n, 
+               params = list(rho = rho, lambda = lambda, exp_rate = exp_rate))
+  
+  
+  if(case == "linear_corr_snorm"){
+    df <- as.data.frame(mvrnorm(n=n, mu=mu, Sigma=sigma))
+    df <- df %>% 
+    mutate(Y=Y_true(V1, V2, epsilon),
+           Eps = epsilon)
+    colnames(df) <-  c("X1","X2","Y", "Eps")
+    return(list(df=df,meta=meta))
+  }else if(case == "hidden_impact"){
+    df <- data.frame(X1 = x1, X2 = x2, Y = 0.5+x1+0.6*x2*x2+z+epsilon, Eps=epsilon)
+    colnames(df) <-  c("X1","X2","Y", "Eps")
+    return(list(df = df, meta = meta, z = z))
+  } #dodać nonlinear_corr
+  
+  y <- Y_true(x1,x2,epsilon)
+  df <- data.frame(X1 = x1, X2 = x2, Y = y, Eps = epsilon)
+  colnames(df) <-  c("X1","X2","Y", "Eps")
+  return(list(df=df,meta=meta))
+}
+```
+
+## Testowanie poprawności generowania zmiennych o określonych rozkładach
+
+Sprawdźmy działanie naszych funkcji na poszczególnych przypadkach:
+
+```{r}
+#| message: false
+# sprawdzenie generowania danych dla zmiennych objaśniających pochodzących z rozkładu normalnego standaryzowanego
+results_double_snorm <- list(generate_data(case="double_snorm"),
+                             generate_data(case="double_snorm"),
+                             generate_data(case="double_snorm"))
+
+df1_double_snorm <- results_double_snorm[[1]]$df
+df2_double_snorm <- results_double_snorm[[2]]$df
+df3_double_snorm <- results_double_snorm[[3]]$df 
+ggpairs(df1_double_snorm)
+ggpairs(df2_double_snorm)
+ggpairs(df3_double_snorm)
+```
+
+```{r}
+#| message: false
+# sprawdzenie generowania danych dla zmiennych objaśniających pochodzących z rozkładu jednostajnego na odcinku [-3,3]
+results_unif_narrow <- list(generate_data(case="double_unif_narrow"),
+                             generate_data(case="double_unif_narrow"),
+                             generate_data(case="double_unif_narrow"))
+
+df1_unif_narrow <- results_unif_narrow[[1]]$df
+df2_unif_narrow <- results_unif_narrow[[2]]$df
+df3_unif_narrow <- results_unif_narrow[[3]]$df 
+ggpairs(df1_unif_narrow)
+ggpairs(df2_unif_narrow)
+ggpairs(df3_unif_narrow)
+```
+
+```{r}
+#| message: false
+# sprawdzenie generowania danych dla zmiennych objaśniających pochodzących z rozkładu jednostajnego na odcinku [-5,5]
+results_unif_wide <- list(generate_data(case="double_unif_wide"),
+                             generate_data(case="double_unif_wide"),
+                             generate_data(case="double_unif_wide"))
+
+df1_unif_wide <- results_unif_wide[[1]]$df
+df2_unif_wide <- results_unif_wide[[2]]$df
+df3_unif_wide <- results_unif_wide[[3]]$df 
+ggpairs(df1_unif_wide)
+ggpairs(df2_unif_wide)
+ggpairs(df3_unif_wide)
+```
+
+```{r}
+#| message: false
+# sprawdzenie generowania danych dla zmiennych X_1 i X_2 pochodzących z rozkładu 
+#normalnego o średniej 0 i odchyleniu standardowym 2.9 oraz rozkładu wykładniczego
+# o parametrze lambda = 1.2
+results_norm_exp <- list(generate_data(case="norm_exp"),
+                             generate_data(case="norm_exp"),
+                             generate_data(case="norm_exp"))
+
+df1_norm_exp <- results_norm_exp[[1]]$df
+df2_norm_exp <- results_norm_exp[[2]]$df
+df3_norm_exp <- results_norm_exp[[3]]$df 
+ggpairs(df1_norm_exp)
+ggpairs(df2_norm_exp)
+ggpairs(df3_norm_exp)
+```
+
+```{r}
+#| message: false
+# sprawdzenie generowania danych dla zmiennych X_1 i X_2 pochodzących z rozkładu 
+#normalnego standaryzowanego oraz rozkładu wykładniczego
+# o parametrze lambda = 1.2 odpowiednio
+results_snorm_exp <- list(generate_data(case="snorm_exp"),
+                             generate_data(case="snorm_exp"),
+                             generate_data(case="snorm_exp"))
+
+df1_snorm_exp <- results_snorm_exp[[1]]$df
+df2_snorm_exp <- results_snorm_exp[[2]]$df
+df3_snorm_exp <- results_snorm_exp[[3]]$df 
+ggpairs(df1_snorm_exp)
+ggpairs(df2_snorm_exp)
+ggpairs(df3_snorm_exp)
+```
+
+```{r}
+#| message: false
+# sprawdzenie generowania danych dla zmiennych X_1 i X_2 pochodzących z rozkładu Poisson'a o lambdzie równej 2 oraz z rozkładu 
+#normalnego standaryzowanego odpowiednio
+results_pois_snorm <- list(generate_data(case="pois_snorm"),
+                             generate_data(case="pois_snorm"),
+                             generate_data(case="pois_snorm"))
+
+df1_pois_snorm<- results_pois_snorm[[1]]$df
+df2_pois_snorm <- results_pois_snorm[[2]]$df
+df3_pois_snorm <- results_pois_snorm[[3]]$df
+#INNY WYKRES
+
+```
+
+```{r}
+#| message: false
+# sprawdzenie generowania danych dla zmiennych X_1 i X_2, gdy pierwsza pochodzi z rozkładu bimodalnego
+# a druga z rozkładu normalnego standaryzowanego
+results_bimodal_snorm <- list(generate_data(case="bimodal_snorm"),
+                             generate_data(case="bimodal_snorm"),
+                             generate_data(case="bimodal_snorm"))
+
+df1_bimodal_snorm <- results_bimodal_snorm[[1]]$df
+df2_bimodal_snorm <- results_bimodal_snorm[[2]]$df
+df3_bimodal_snorm <- results_bimodal_snorm[[3]]$df 
+ggpairs(df1_bimodal_snorm)
+ggpairs(df2_bimodal_snorm)
+ggpairs(df3_bimodal_snorm)
+```
+
+```{r}
+#| message: false
+# sprawdzenie generowania danych dla zmiennych X_1 i X_2, gdy pierwsza pochodzi z rozkładu wykładniczego,
+# a druga z rozkładu normalnego
+results_exp_norm <- list(generate_data(case="exp_norm"),
+                             generate_data(case="exp_norm"),
+                             generate_data(case="exp_norm"))
+
+df1_exp_norm <- results_exp_norm[[1]]$df
+df2_exp_norm <- results_exp_norm[[2]]$df
+df3_exp_norm <- results_exp_norm[[3]]$df 
+ggpairs(df1_exp_norm)
+ggpairs(df2_exp_norm)
+ggpairs(df3_exp_norm)
+```
+
+```{r}
+#| message: false
+# sprawdzenie generowania danych dla zmiennych X_1 i X_2 pochodzących z rozkładu Poisson'a o lambdzie równej 2 oraz z rozkładu 
+#normalnego odpowiednio
+results_pois_norm <- list(generate_data(case="pois_norm"),
+                             generate_data(case="pois_norm"),
+                             generate_data(case="pois_norm"))
+
+df1_pois_norm<- results_pois_norm[[1]]$df
+df2_pois_norm <- results_pois_norm[[2]]$df
+df3_pois_norm <- results_pois_norm[[3]]$df
+```
+
+```{r}
+#| message: false
+# sprawdzenie generowania danych dla zmiennych X_1 i X_2, gdy pierwsza pochodzi z rozkładu t-Studenta o trzech stopniach swobody,
+# a druga z rozkładu normalnego standaryzowanego
+results_t_snorm <- list(generate_data(case="t_snorm"),
+                             generate_data(case="t_snorm"),
+                             generate_data(case="t_snorm"))
+
+df1_t_snorm <- results_t_snorm[[1]]$df
+df2_t_snorm <- results_t_snorm[[2]]$df
+df3_t_snorm <- results_t_snorm[[3]]$df 
+ggpairs(df1_t_snorm)
+ggpairs(df2_t_snorm)
+ggpairs(df3_t_snorm)
+```
+
+```{r}
+#| message: false
+# sprawdzenie generowania danych dla zmiennych X_1 i X_2, gdy pierwsza pochodzi z rozkładu t-Studenta o trzech stopniach swobody,
+# a druga z rozkładu normalnego 
+results_t_norm <- list(generate_data(case="t_norm"),
+                             generate_data(case="t_norm"),
+                             generate_data(case="t_norm"))
+
+df1_t_norm <- results_t_norm[[1]]$df
+df2_t_norm <- results_t_norm[[2]]$df
+df3_t_norm <- results_t_norm[[3]]$df 
+ggpairs(df1_t_norm)
+ggpairs(df2_t_norm)
+ggpairs(df3_t_norm)
+```
+
+```{r}
+#| message: false
+# sprawdzenie generowania danych dla zmiennych X_1 i X_2, gdy pierwsza pochodzi z rozkładu t-Studenta o trzech stopniach swobody,
+# a druga z rozkładu wykładniczego 
+results_t_exp <- list(generate_data(case="t_exp"),
+                             generate_data(case="t_exp"),
+                             generate_data(case="t_exp"))
+
+df1_t_exp <- results_t_exp[[1]]$df
+df2_t_exp <- results_t_exp[[2]]$df
+df3_t_exp <- results_t_exp[[3]]$df 
+ggpairs(df1_t_exp)
+ggpairs(df2_t_exp)
+ggpairs(df3_t_exp)
+```
+
+```{r}
+#| message: false
+# sprawdzenie generowania danych dla zmiennych X_1 i X_2, gdy są one liniowo zależne 
+#i obie pochodzą z rozkładu normalnego standaryzowanego
+results_linear_corr <- list(generate_data(case="linear_corr_snorm", rho = 0.8),
+                             generate_data(case="linear_corr_snorm", rho = 0.8),
+                             generate_data(case="linear_corr_snorm", rho = 0.8))
+
+df1_linear_corr <- results_linear_corr[[1]]$df
+df2_linear_corr <- results_linear_corr[[2]]$df
+df3_linear_corr <- results_linear_corr[[3]]$df 
+ggpairs(df1_linear_corr)
+ggpairs(df2_linear_corr)
+ggpairs(df3_linear_corr)
+```
+
+```{r}
+#| message: false
+# zmienna X_1 jest nieliniową funkcją zmiennej X_2
+results_nonlinear_corr <- list(generate_data(case="nonlinear_corr", a=1,b=1.5),
+                             generate_data(case="nonlinear_corr", a=1,b=1.5),
+                             generate_data(case="nonlinear_corr", a=1, b=1.5))
+
+df1_nonlinear_corr <- results_nonlinear_corr[[1]]$df
+df2_nonlinear_corr <- results_nonlinear_corr[[2]]$df
+df3_nonlinear_corr <- results_nonlinear_corr[[3]]$df 
+ggpairs(df1_nonlinear_corr)
+ggpairs(df2_nonlinear_corr)
+ggpairs(df3_nonlinear_corr)
+```
+
+```{r}
+#| message: false
+# Istnieje zmienna ukryta
+results_hidden_impact <- list(generate_data(case="hidden_impact"),
+                             generate_data(case="hidden_impact"),
+                             generate_data(case="hidden_impact"))
+
+df1_hidden_impact <- results_hidden_impact[[1]]$df
+df2_hidden_impact <- results_hidden_impact[[2]]$df
+df3_hidden_impact <- results_hidden_impact[[3]]$df 
+ggpairs(df1_hidden_impact)
+ggpairs(df2_hidden_impact)
+ggpairs(df3_hidden_impact)
+```
+
+\*Ewentualnie mogę zamienić te wykresy na takie, a Dominika może wykorzystać te ggpairs już przy rozpisywaniu konkretnych modeli (wg mnie trzeba tak zrobić i lepiej żebym te wykresy jak ten poniżej dodała w swojej części, a Dominika już ma gotowca do podejrzenia danych w swojej częśći ;) )\
+
+```{r}
+library(tidyr)
+library(ggplot2)
+
+# Połączenie danych w jedną ramkę
+df_all_bimodal <- bind_rows(
+  df1_bimodal_snorm %>% mutate(run = "run1"),
+  df2_bimodal_snorm %>% mutate(run = "run2"),
+  df3_bimodal_snorm %>% mutate(run = "run3")
+)
+
+# Zmiana formatu na long, żeby łatwiej rysować
+df_long_bimodal <- df_all_bimodal %>%
+  pivot_longer(cols = c(X1, X2),
+               names_to = "zmienna",
+               values_to = "wartość")
+
+# Gęstości dla obu zmiennych i trzech powtórzeń
+ggplot(df_long_bimodal, aes(x = wartość, col=run)) +
+  geom_density(alpha = 0.3) +
+  facet_wrap(~ zmienna, scales = "free") +
+  labs(title = "Rozkłady X1 (bimodalny) i X2 (standaryzowany normalny)",
+       x = "Wartość", y = "Gęstość") +
+  theme_minimal()
+
+```
+
+## Krótka charakterystyka generowanych danych
+
+Poniższa tabela zawiera empiryczne informacje co do wygenerowanych ramek danych. Pozwala to na porównanie poprawności otrzymywanych rozkładów.
+
+```{r}
+
+# każdy wektor parametrów wygenerowanych rozkładów zawiera po kolei:
+# wartość empirycznej średniej zmiennej X1
+# wartość empirycznej wariancji zmiennej X1
+# wartość empirycznej średniej zmiennej X2
+# wartość empirycznej wariancji zmiennej X2
+# wartość współczynnika korelacji pomiędzy tymi zmiennymi 
+double_snorm_param1 <- c(sum(df1_double_snorm$X1)/length(df1_double_snorm$X1),
+                         var(df1_double_snorm$X1),
+                         sum(df1_double_snorm$X2)/length(df1_double_snorm$X2),
+                         var(df1_double_snorm$X2),
+                         cor(df1_double_snorm$X1,df1_double_snorm$X2))
+double_snorm_param2 <- c(sum(df2_double_snorm$X1)/length(df2_double_snorm$X1),
+                         var(df2_double_snorm$X1),
+                         sum(df2_double_snorm$X2)/length(df2_double_snorm$X2),
+                         var(df2_double_snorm$X2),
+                         cor(df2_double_snorm$X1,df2_double_snorm$X2))
+double_snorm_param3 <- c(sum(df3_double_snorm$X1)/length(df3_double_snorm$X1),
+                         var(df3_double_snorm$X1),
+                         sum(df3_double_snorm$X2)/length(df3_double_snorm$X2),
+                         var(df3_double_snorm$X2),
+                         cor(df3_double_snorm$X1,df3_double_snorm$X2))
+
+double_unif_narrow1 <- c(sum(df1_unif_narrow$X1)/length(df1_unif_narrow$X1),
+                         var(df1_unif_narrow$X1),
+                         sum(df1_unif_narrow$X2)/length(df1_unif_narrow$X2),
+                         var(df1_unif_narrow$X2),
+                         cor(df1_unif_narrow$X1,df1_unif_narrow$X2))
+double_unif_narrow2 <- c(sum(df2_unif_narrow$X1)/length(df2_unif_narrow$X1),
+                         var(df2_unif_narrow$X1),
+                         sum(df2_unif_narrow$X2)/length(df2_unif_narrow$X2),
+                         var(df2_unif_narrow$X2),
+                         cor(df2_unif_narrow$X1,df2_unif_narrow$X2))
+double_unif_narrow3 <- c(sum(df3_unif_narrow$X1)/length(df3_unif_narrow$X1),
+                         var(df3_unif_narrow$X1),
+                         sum(df3_unif_narrow$X2)/length(df3_unif_narrow$X2),
+                         var(df3_unif_narrow$X2),
+                         cor(df3_unif_narrow$X1,df3_unif_narrow$X2))
+
+double_unif_wide1 <- c(sum(df1_unif_wide$X1)/length(df1_unif_wide$X1),
+                         var(df1_unif_wide$X1),
+                         sum(df1_unif_wide$X2)/length(df1_unif_wide$X2),
+                         var(df1_unif_wide$X2),
+                         cor(df1_unif_wide$X1,df1_unif_wide$X2))
+double_unif_wide2 <- c(sum(df2_unif_wide$X1)/length(df2_unif_wide$X1),
+                         var(df2_unif_wide$X1),
+                         sum(df2_unif_wide$X2)/length(df2_unif_wide$X2),
+                         var(df2_unif_wide$X2),
+                         cor(df2_unif_wide$X1,df2_unif_wide$X2))
+double_unif_wide3 <- c(sum(df3_unif_wide$X1)/length(df3_unif_wide$X1),
+                         var(df3_unif_wide$X1),
+                         sum(df3_unif_wide$X2)/length(df3_unif_wide$X2),
+                         var(df3_unif_wide$X2),
+                         cor(df3_unif_wide$X1,df3_unif_wide$X2))
+
+norm_exp1 <- c(sum(df1_norm_exp$X1)/length(df1_norm_exp$X1),
+              var(df1_norm_exp$X1),
+              sum(df1_norm_exp$X2)/length(df1_norm_exp$X2),
+              var(df1_norm_exp$X2),
+              cor(df1_norm_exp$X1,df1_norm_exp$X2))
+norm_exp2 <- c(sum(df2_norm_exp$X1)/length(df2_norm_exp$X1),
+              var(df2_norm_exp$X1),
+              sum(df2_norm_exp$X2)/length(df2_norm_exp$X2),
+              var(df2_norm_exp$X2),
+              cor(df2_norm_exp$X1,df2_norm_exp$X2))
+norm_exp3 <- c(sum(df3_norm_exp$X1)/length(df3_norm_exp$X1),
+              var(df3_norm_exp$X1),
+              sum(df3_norm_exp$X2)/length(df3_norm_exp$X2),
+              var(df3_norm_exp$X2),
+              cor(df3_norm_exp$X1,df3_norm_exp$X2))
+
+snorm_exp1 <- c(sum(df1_snorm_exp$X1)/length(df1_snorm_exp$X1),
+              var(df1_snorm_exp$X1),
+              sum(df1_snorm_exp$X2)/length(df1_snorm_exp$X2),
+              var(df1_snorm_exp$X2),
+              cor(df1_snorm_exp$X1,df1_snorm_exp$X2))
+snorm_exp2 <- c(sum(df2_snorm_exp$X1)/length(df2_snorm_exp$X1),
+              var(df2_snorm_exp$X1),
+              sum(df2_snorm_exp$X2)/length(df2_snorm_exp$X2),
+              var(df2_snorm_exp$X2),
+              cor(df2_snorm_exp$X1,df2_snorm_exp$X2))
+snorm_exp3 <- c(sum(df3_snorm_exp$X1)/length(df3_snorm_exp$X1),
+              var(df3_snorm_exp$X1),
+              sum(df3_snorm_exp$X2)/length(df3_snorm_exp$X2),
+              var(df3_snorm_exp$X2),
+              cor(df3_snorm_exp$X1,df3_snorm_exp$X2))
+
+pois_snorm1 <- c(sum(df1_pois_snorm$X1)/length(df1_pois_snorm$X1),
+              var(df1_pois_snorm$X1),
+              sum(df1_pois_snorm$X2)/length(df1_pois_snorm$X2),
+              var(df1_pois_snorm$X2),
+              cor(df1_pois_snorm$X1,df1_pois_snorm$X2))
+pois_snorm2 <- c(sum(df2_pois_snorm$X1)/length(df2_pois_snorm$X1),
+              var(df2_pois_snorm$X1),
+              sum(df2_pois_snorm$X2)/length(df2_pois_snorm$X2),
+              var(df2_pois_snorm$X2),
+              cor(df2_pois_snorm$X1,df2_pois_snorm$X2))
+pois_snorm3 <- c(sum(df3_pois_snorm$X1)/length(df3_pois_snorm$X1),
+              var(df3_pois_snorm$X1),
+              sum(df3_pois_snorm$X2)/length(df3_pois_snorm$X2),
+              var(df3_pois_snorm$X2),
+              cor(df3_pois_snorm$X1,df3_pois_snorm$X2))
+
+bimodal_snorm1 <- c(sum(df1_bimodal_snorm$X1)/length(df1_bimodal_snorm$X1),
+              var(df1_bimodal_snorm$X1),
+              sum(df1_bimodal_snorm$X2)/length(df1_bimodal_snorm$X2),
+              var(df1_bimodal_snorm$X2),
+              cor(df1_bimodal_snorm$X1,df1_bimodal_snorm$X2))
+bimodal_snorm2 <- c(sum(df2_bimodal_snorm$X1)/length(df2_bimodal_snorm$X1),
+              var(df2_bimodal_snorm$X1),
+              sum(df2_bimodal_snorm$X2)/length(df2_bimodal_snorm$X2),
+              var(df2_bimodal_snorm$X2),
+              cor(df2_bimodal_snorm$X1,df2_bimodal_snorm$X2))
+bimodal_snorm3 <- c(sum(df3_bimodal_snorm$X1)/length(df3_bimodal_snorm$X1),
+              var(df3_bimodal_snorm$X1),
+              sum(df3_bimodal_snorm$X2)/length(df3_bimodal_snorm$X2),
+              var(df3_bimodal_snorm$X2),
+              cor(df3_bimodal_snorm$X1,df3_bimodal_snorm$X2))
+
+exp_norm1 <- c(sum(df1_exp_norm$X1)/length(df1_exp_norm$X1),
+              var(df1_exp_norm$X1),
+              sum(df1_exp_norm$X2)/length(df1_exp_norm$X2),
+              var(df1_exp_norm$X2),
+              cor(df1_exp_norm$X1,df1_exp_norm$X2))
+exp_norm2 <- c(sum(df2_exp_norm$X1)/length(df2_exp_norm$X1),
+              var(df2_exp_norm$X1),
+              sum(df2_exp_norm$X2)/length(df2_exp_norm$X2),
+              var(df2_exp_norm$X2),
+              cor(df2_exp_norm$X1,df2_exp_norm$X2))
+exp_norm3 <- c(sum(df3_exp_norm$X1)/length(df3_exp_norm$X1),
+              var(df3_exp_norm$X1),
+              sum(df3_exp_norm$X2)/length(df3_exp_norm$X2),
+              var(df3_exp_norm$X2),
+              cor(df3_exp_norm$X1,df3_exp_norm$X2))
+
+
+pois_norm1 <- c(sum(df1_pois_norm$X1)/length(df1_pois_norm$X1),
+              var(df1_pois_norm$X1),
+              sum(df1_pois_norm$X2)/length(df1_pois_norm$X2),
+              var(df1_pois_norm$X2),
+              cor(df1_pois_norm$X1,df1_pois_norm$X2))
+pois_norm2 <- c(sum(df2_pois_norm$X1)/length(df2_pois_norm$X1),
+              var(df2_pois_norm$X1),
+              sum(df2_pois_norm$X2)/length(df2_pois_norm$X2),
+              var(df2_pois_norm$X2),
+              cor(df2_pois_norm$X1,df2_pois_norm$X2))
+pois_norm3 <- c(sum(df3_pois_norm$X1)/length(df3_pois_norm$X1),
+              var(df3_pois_norm$X1),
+              sum(df3_pois_norm$X2)/length(df3_pois_norm$X2),
+              var(df3_pois_norm$X2),
+              cor(df3_pois_norm$X1,df3_pois_norm$X2))
+
+t_snorm1 <- c(sum(df1_t_snorm$X1)/length(df1_t_snorm$X1),
+              var(df1_t_snorm$X1),
+              sum(df1_t_snorm$X2)/length(df1_t_snorm$X2),
+              var(df1_t_snorm$X2),
+              cor(df1_t_snorm$X1,df1_t_snorm$X2))
+t_snorm2 <- c(sum(df2_t_snorm$X1)/length(df2_t_snorm$X1),
+              var(df2_t_snorm$X1),
+              sum(df2_t_snorm$X2)/length(df2_t_snorm$X2),
+              var(df2_t_snorm$X2),
+              cor(df2_t_snorm$X1,df2_t_snorm$X2))
+t_snorm3 <- c(sum(df3_t_snorm$X1)/length(df3_t_snorm$X1),
+              var(df3_t_snorm$X1),
+              sum(df3_t_snorm$X2)/length(df3_t_snorm$X2),
+              var(df3_t_snorm$X2),
+              cor(df3_t_snorm$X1,df3_t_snorm$X2))
+
+t_norm1 <- c(sum(df1_t_norm$X1)/length(df1_t_norm$X1),
+              var(df1_t_norm$X1),
+              sum(df1_t_norm$X2)/length(df1_t_norm$X2),
+              var(df1_t_norm$X2),
+              cor(df1_t_norm$X1,df1_t_norm$X2))
+t_norm2 <- c(sum(df2_t_norm$X1)/length(df2_t_norm$X1),
+              var(df2_t_norm$X1),
+              sum(df2_t_norm$X2)/length(df2_t_norm$X2),
+              var(df2_t_norm$X2),
+              cor(df2_t_norm$X1,df2_t_norm$X2))
+t_norm3 <- c(sum(df3_t_norm$X1)/length(df3_t_norm$X1),
+              var(df3_t_norm$X1),
+              sum(df3_t_norm$X2)/length(df3_t_norm$X2),
+              var(df3_t_norm$X2),
+              cor(df3_t_norm$X1,df3_t_norm$X2))
+
+t_exp1 <- c(sum(df1_t_exp$X1)/length(df1_t_exp$X1),
+              var(df1_t_exp$X1),
+              sum(df1_t_exp$X2)/length(df1_t_exp$X2),
+              var(df1_t_exp$X2),
+              cor(df1_t_exp$X1,df1_t_exp$X2))
+t_exp2 <- c(sum(df2_t_exp$X1)/length(df2_t_exp$X1),
+              var(df2_t_exp$X1),
+              sum(df2_t_exp$X2)/length(df2_t_exp$X2),
+              var(df2_t_exp$X2),
+              cor(df2_t_exp$X1,df2_t_exp$X2))
+t_exp3 <- c(sum(df3_t_exp$X1)/length(df3_t_exp$X1),
+              var(df3_t_exp$X1),
+              sum(df3_t_exp$X2)/length(df3_t_exp$X2),
+              var(df3_t_exp$X2),
+              cor(df3_t_exp$X1,df3_t_exp$X2))
+
+linear_corr1 <- c(sum(df1_linear_corr$X1)/length(df1_linear_corr$X1),
+              var(df1_linear_corr$X1),
+              sum(df1_linear_corr$X2)/length(df1_linear_corr$X2),
+              var(df1_linear_corr$X2),
+              cor(df1_linear_corr$X1,df1_linear_corr$X2))
+linear_corr2 <- c(sum(df2_linear_corr$X1)/length(df2_linear_corr$X1),
+              var(df2_linear_corr$X1),
+              sum(df2_linear_corr$X2)/length(df2_linear_corr$X2),
+              var(df2_linear_corr$X2),
+              cor(df2_linear_corr$X1,df2_linear_corr$X2))
+linear_corr3 <- c(sum(df3_linear_corr$X1)/length(df3_linear_corr$X1),
+              var(df3_linear_corr$X1),
+              sum(df3_linear_corr$X2)/length(df3_linear_corr$X2),
+              var(df3_linear_corr$X2),
+              cor(df3_linear_corr$X1,df3_linear_corr$X2))
+
+nonlinear_corr1 <- c(sum(df1_nonlinear_corr$X1)/length(df1_nonlinear_corr$X1),
+              var(df1_nonlinear_corr$X1),
+              sum(df1_nonlinear_corr$X2)/length(df1_nonlinear_corr$X2),
+              var(df1_nonlinear_corr$X2),
+              cor(df1_nonlinear_corr$X1,df1_nonlinear_corr$X2))
+nonlinear_corr2 <- c(sum(df2_nonlinear_corr$X1)/length(df2_nonlinear_corr$X1),
+              var(df2_nonlinear_corr$X1),
+              sum(df2_nonlinear_corr$X2)/length(df2_nonlinear_corr$X2),
+              var(df2_nonlinear_corr$X2),
+              cor(df2_nonlinear_corr$X1,df2_nonlinear_corr$X2))
+nonlinear_corr3 <- c(sum(df3_nonlinear_corr$X1)/length(df3_nonlinear_corr$X1),
+              var(df3_nonlinear_corr$X1),
+              sum(df3_nonlinear_corr$X2)/length(df3_nonlinear_corr$X2),
+              var(df3_nonlinear_corr$X2),
+              cor(df3_nonlinear_corr$X1,df3_nonlinear_corr$X2))
+
+hidden_impact1 <- c(sum(df1_hidden_impact$X1)/length(df1_hidden_impact$X1),
+              var(df1_hidden_impact$X1),
+              sum(df1_hidden_impact$X2)/length(df1_hidden_impact$X2),
+              var(df1_hidden_impact$X2),
+              cor(df1_hidden_impact$X1,df1_hidden_impact$X2))
+hidden_impact2 <- c(sum(df2_hidden_impact$X1)/length(df2_hidden_impact$X1),
+              var(df2_hidden_impact$X1),
+              sum(df2_hidden_impact$X2)/length(df2_hidden_impact$X2),
+              var(df2_hidden_impact$X2),
+              cor(df2_hidden_impact$X1,df2_hidden_impact$X2))
+hidden_impact3 <- c(sum(df3_hidden_impact$X1)/length(df3_hidden_impact$X1),
+              var(df3_hidden_impact$X1),
+              sum(df3_hidden_impact$X2)/length(df3_hidden_impact$X2),
+              var(df3_hidden_impact$X2),
+              cor(df3_hidden_impact$X1,df3_hidden_impact$X2))
+```
+
+```{r}
+library(knitr)
+library(kableExtra)
+
+# 1. połącz wszystkie wektory w ramkę danych w kolejności, jak w Twoim kodzie
+dist_param <- data.frame(
+  dist = c(
+    rep("double_snorm", 3),
+    rep("double_unif_narrow", 3),
+    rep("double_unif_wide", 3),
+    rep("norm_exp", 3),
+    rep("snorm_exp", 3),
+    rep("pois_snorm", 3),
+    rep("bimodal_snorm", 3),
+    rep("exp_norm", 3),
+    rep("pois_norm", 3),
+    rep("t_snorm", 3),
+    rep("t_norm", 3),
+    rep("t_exp", 3),
+    rep("linear_corr", 3),
+    rep("nonlinear_corr", 3),
+    rep("hidden_impact", 3)
+  ),
+  run = rep(1:3, 15),
+  mean_X1 = c(
+      double_snorm_param1[1], double_snorm_param2[1], double_snorm_param3[1],
+  double_unif_narrow1[1], double_unif_narrow2[1], double_unif_narrow3[1],
+  double_unif_wide1[1], double_unif_wide2[1], double_unif_wide3[1],
+  norm_exp1[1], norm_exp2[1], norm_exp3[1],
+  snorm_exp1[1], snorm_exp2[1], snorm_exp3[1],
+  pois_snorm1[1], pois_snorm2[1], pois_snorm3[1],
+  bimodal_snorm1[1], bimodal_snorm2[1], bimodal_snorm3[1],
+  exp_norm1[1], exp_norm2[1], exp_norm3[1],
+  pois_norm1[1], pois_norm2[1], pois_norm3[1],
+  t_snorm1[1], t_snorm2[1], t_snorm3[1],
+  t_norm1[1], t_norm2[1], t_norm3[1],
+  t_exp1[1], t_exp2[1], t_exp3[1],
+  linear_corr1[1], linear_corr2[1], linear_corr3[1],
+  nonlinear_corr1[1], nonlinear_corr2[1], nonlinear_corr3[1],
+  hidden_impact1[1], hidden_impact2[1], hidden_impact3[1]
+  )
+)
+
+# 2. Dodaj pozostałe kolumny (wariancje i korelacje)
+dist_param$var_X1 <- c(
+  double_snorm_param1[2], double_snorm_param2[2], double_snorm_param3[2],
+  double_unif_narrow1[2], double_unif_narrow2[2], double_unif_narrow3[2],
+  double_unif_wide1[2], double_unif_wide2[2], double_unif_wide3[2],
+  norm_exp1[2], norm_exp2[2], norm_exp3[2],
+  snorm_exp1[2], snorm_exp2[2], snorm_exp3[2],
+  pois_snorm1[2], pois_snorm2[2], pois_snorm3[2],
+  bimodal_snorm1[2], bimodal_snorm2[2], bimodal_snorm3[2],
+  exp_norm1[2], exp_norm2[2], exp_norm3[2],
+  pois_norm1[2], pois_norm2[2], pois_norm3[2],
+  t_snorm1[2], t_snorm2[2], t_snorm3[2],
+  t_norm1[2], t_norm2[2], t_norm3[2],
+  t_exp1[2], t_exp2[2], t_exp3[2],
+  linear_corr1[2], linear_corr2[2], linear_corr3[2],
+  nonlinear_corr1[2], nonlinear_corr2[2], nonlinear_corr3[2],
+  hidden_impact1[2], hidden_impact2[2], hidden_impact3[2]
+)
+
+dist_param$mean_X2 <- c(
+  double_snorm_param1[3], double_snorm_param2[3], double_snorm_param3[3],
+  double_unif_narrow1[3], double_unif_narrow2[3], double_unif_narrow3[3],
+  double_unif_wide1[3], double_unif_wide2[3], double_unif_wide3[3],
+  norm_exp1[3], norm_exp2[3], norm_exp3[3],
+  snorm_exp1[3], snorm_exp2[3], snorm_exp3[3],
+  pois_snorm1[3], pois_snorm2[3], pois_snorm3[3],
+  bimodal_snorm1[3], bimodal_snorm2[3], bimodal_snorm3[3],
+  exp_norm1[3], exp_norm2[3], exp_norm3[3],
+  pois_norm1[3], pois_norm2[3], pois_norm3[3],
+  t_snorm1[3], t_snorm2[3], t_snorm3[3],
+  t_norm1[3], t_norm2[3], t_norm3[3],
+  t_exp1[3], t_exp2[3], t_exp3[3],
+  linear_corr1[3], linear_corr2[3], linear_corr3[3],
+  nonlinear_corr1[3], nonlinear_corr2[3], nonlinear_corr3[3],
+  hidden_impact1[3], hidden_impact2[3], hidden_impact3[3]
+)
+
+dist_param$var_X2 <- c(
+  double_snorm_param1[4], double_snorm_param2[4], double_snorm_param3[4],
+  double_unif_narrow1[4], double_unif_narrow2[4], double_unif_narrow3[4],
+  double_unif_wide1[4], double_unif_wide2[4], double_unif_wide3[4],
+  norm_exp1[4], norm_exp2[4], norm_exp3[4],
+  snorm_exp1[4], snorm_exp2[4], snorm_exp3[4],
+  pois_snorm1[4], pois_snorm2[4], pois_snorm3[4],
+  bimodal_snorm1[4], bimodal_snorm2[4], bimodal_snorm3[4],
+  exp_norm1[4], exp_norm2[4], exp_norm3[4],
+  pois_norm1[4], pois_norm2[4], pois_norm3[4],
+  t_snorm1[4], t_snorm2[4], t_snorm3[4],
+  t_norm1[4], t_norm2[4], t_norm3[4],
+  t_exp1[4], t_exp2[4], t_exp3[4],
+  linear_corr1[4], linear_corr2[4], linear_corr3[4],
+  nonlinear_corr1[4], nonlinear_corr2[4], nonlinear_corr3[4],
+  hidden_impact1[4], hidden_impact2[4], hidden_impact3[4]
+)
+
+dist_param$cor_X1_X2 <- c(
+  double_snorm_param1[5], double_snorm_param2[5], double_snorm_param3[5],
+  double_unif_narrow1[5], double_unif_narrow2[5], double_unif_narrow3[5],
+  double_unif_wide1[5], double_unif_wide2[5], double_unif_wide3[5],
+  norm_exp1[5], norm_exp2[5], norm_exp3[5],
+  snorm_exp1[5], snorm_exp2[5], snorm_exp3[5],
+  pois_snorm1[5], pois_snorm2[5], pois_snorm3[5],
+  bimodal_snorm1[5], bimodal_snorm2[5], bimodal_snorm3[5],
+  exp_norm1[5], exp_norm2[5], exp_norm3[5],
+  pois_norm1[5], pois_norm2[5], pois_norm3[5],
+  t_snorm1[5], t_snorm2[5], t_snorm3[5],
+  t_norm1[5], t_norm2[5], t_norm3[5],
+  t_exp1[5], t_exp2[5], t_exp3[5],
+  linear_corr1[5], linear_corr2[5], linear_corr3[5],
+  nonlinear_corr1[5], nonlinear_corr2[5], nonlinear_corr3[5],
+  hidden_impact1[5], hidden_impact2[5], hidden_impact3[5]
+)
+
+# 3. zaokrąglenie dla czytelności
+dist_param <- dist_param %>%
+  mutate(across(c(mean_X1, var_X1, mean_X2, var_X2, cor_X1_X2), ~ round(.x, 4)))
+
+
+```
+
+```{r}
+kable(dist_param, caption = "Empiryczne parametry zmiennych X1 i X2 dla wszystkich rozkładów i powtórzeń") %>%
+  kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover", "condensed")) %>% 
+  row_spec(seq(0, nrow(dist_param), by = 3), extra_css = "border-bottom: 2px solid black;")
+```
+
+To daje nam praktyczny wgląd na sposób generowania danych przez dedykowaną funkcję. Widzimy, że rozkłady się zgadzają z założeniami, a tworzone ramki danych są miarodajne. Możemy zatem przejść do dalszych badań.
+
+# PAMIĘTAJCIE O USTALENIU SEEDU DLA KAŻDEJ ITERACJI\< ABY MOŻNA BYŁO DOKŁADNIE KAŻDĄ ITERACJĘ POWTÓRZYĆ!!!
+
+
+---
+title: "Projekt z Analizy Danych część 2 - modele"
+author: "Dominika"
+format: html
+editor: visual
+---
+
+## Część 2 projektu - modele i wyliczenie MSE
+
+## Dlaczego stosujemy modele liniowe `lm()`? 
+
+Model `lm()` w R implementuje klasyczną metodę najmniejszych kwadratów (MNK), która znajduje takie współczynniki $\beta$, aby minimalizować sumę kwadratów błędów między wartościami obserwowanymi (Y) a wartościami przewidywanymi przez model $(\hat{Y})$.\
+Oznacza to, że `lm()` szuka prostych (hiperpłaszczyzn) najlepiej dopasowanych do danych w sensie średniokwadratowym (czyli właśnie tego, co mierzy MSE).
+
+W naszym projekcie funkcja prawdziwa ma postać:
+
+$$Y=0.5+X_1+0.6\cdot X_2^2+\epsilon$$To jest model liniowy względem parametrów, ponieważ zależność od $\beta_0$, $\beta_1$, $\beta_2$ jest liniowa (nawet jeśli występuje kwadrat zmiennej $X_2^2$). Dlatego możemy używać `lm()` nawet mimo obecności nieliniowości w zmiennych.
+
+## Dlaczego trzy modele i jakie mają znaczenie?
+
+Wybraliśmy trzy różne modele aby ocenić, jak różny stopień dopasowania modelu do prawdziwej zależności wpływa na wynik metryki MSE.\
+Każdy z modeli reprezentuje inny poziom trafności założeń:
+
+-   Model 1: `lm(Y ~ X1 + I(X2^2))` odzwierciedla prawdziwą zależność i stanowi punkt odniesienia (najlepsze możliwe dopasowanie),
+
+-   Model 2: `lm(Y ~ X1 + X2)` jest celowo uproszczony, aby pokazać, jak wzrasta błąd, gdy pominiemy ważny nieliniowy element,
+
+-   Model 3: `lm(Y ~ X1 + X2 + I(X1*X2))` zawiera dodatkowy czynnik, który nie występuje w rzeczywistej funkcji - pokazuje, jak nadmiarowa złożoność wpływa na stabilność i wartość błędu.
+
+## **Globalny szum losowy** $\epsilon$  
+
+Zmienna epsilon została zdefiniowana globalnie jako:
+
+`epsilon <- rnorm(120, sd = 0.1)`
+
+Stały szum globalny pozwala porównywać MSE między przypadkami, bo każdy model jest „testowany” w identycznych warunkach błędu losowego. Gdyby szum był generowany lokalnie w każdej ramce, to różnice w MSE mogłyby wynikać tylko z losowego szczęścia w generacji szumu, a nie z różnic między rozkładami czy modelami.
+
+Wartość odchylenia standardowego = 0.1 została dobrana tak, żeby błąd nie dominował sygnału — tzn. żeby można było realnie zobaczyć różnice w dopasowaniu modeli, ale jednocześnie zachować element losowości.
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(MASS)
+library(broom)   
+library(gridExtra)
+
+set.seed(123)
+
+cases <- c(
+  "double_snorm",
+  "double_unif_narrow",
+  "double_unif_wide",
+  "norm_exp",
+  "snorm_exp",
+  "pois_snorm",
+  "bimodal_snorm",
+  "exp_norm",
+  "pois_norm",
+  "t_snorm",
+  "t_norm",
+  "t_exp",
+  "linear_corr_snormrho0.2",
+  "linear_corr_snorm_rho0.5",
+  "linear_corr_snorm_rho0.9",
+  "nonlinear_corr_a0.5b0.2",
+  "nonlinear_corr_a1b0.5",
+  "nonlinear_corr_a1.5b1",
+  "hidden_impact"
+)
+
+n_iter <- 200
+n_cases <- length(cases)
+n_obs <- 120
+
+results_list <- list()
+idx <- 1
+
+for (case_id in 1:n_cases) {
+  
+  case_name <- cases[case_id]
+  print(paste("Przypadek:", case_name))
+  
+  for (i in 1:n_iter) {
+    
+    # generowanie danych
+    if (grepl("linear_corr_snorm", case_name)) {
+      # wyciągamy rho z nazwy, np. z 'rho0.5'
+      rho_val <- as.numeric(sub(".*rho", "", case_name))
+      df_list <- generate_data(case = "linear_corr_snorm", rho = rho_val)
+      
+    } else if (grepl("nonlinear_corr", case_name)) {
+      # wyciągamy a i b z nazwy, np. z 'a1.5b1'
+      ab_vals <- regmatches(case_name, gregexpr("[0-9\\.]+", case_name))[[1]]
+      a_val <- as.numeric(ab_vals[1])
+      b_val <- as.numeric(ab_vals[2])
+      df_list <- generate_data(case = "nonlinear_corr", a = a_val, b = b_val)
+    } else {
+      df_list <- generate_data(case = case_name)
+    }
+    df <- df_list$df
+    
+    m_simple <- lm(Y ~ X1 + X2, data = df)
+    m_ideal  <- lm(Y ~ X1 + I(X2^2), data = df)
+    m_mixed  <- lm(Y ~ X1 + X2 + I(X1 * X2), data = df)
+    
+    # wyliczanie MSE i zapis współczynników
+    models <- list(simple = m_simple, ideal = m_ideal, mixed = m_mixed)
+    for (m_name in names(models)) {
+      m <- models[[m_name]]      
+      preds <- predict(m, df)
+      mse <- mean((df$Y - preds)^2)
+      
+      coefs <- coef(m)
+      row <- tibble(
+        case = case_name,
+        iter = i,
+        model = m_name,
+        mse = mse,
+        intercept = ifelse("(Intercept)" %in% names(coefs), coefs["(Intercept)"], NA_real_),
+        b_X1 = ifelse("X1" %in% names(coefs), coefs["X1"], NA_real_),
+        b_X2 = ifelse("X2" %in% names(coefs), coefs["X2"], NA_real_),
+        b_X2sq = ifelse("I(X2^2)" %in% names(coefs), coefs["I(X2^2)"], NA_real_),
+        b_X1X2 = ifelse("I(X1 * X2)" %in% names(coefs), coefs["I(X1 * X2)"], NA_real_)
+      )
+      
+      results_list[[idx]] <- row
+      idx <- idx + 1
+    }
+  }
+}
+
+results_all <- bind_rows(results_list)
+
+# Zapis wyników
+write.csv(results_all, "wyniki_parametry_MSE.csv", row.names = FALSE)
+
+# Statystyki MSE
+results_summary <- results_all %>%
+  group_by(case, model) %>%
+  summarise(
+    min_MSE=min(mse),
+    q25 = quantile(mse, 0.25),
+    mean_MSE = mean(mse),
+    median_MSE = median(mse),
+    q75 = quantile(mse, 0.75),
+    max_MSE=max(mse),
+    sd_MSE = sd(mse),
+    .groups = "drop"
+  )
+
+write.csv(results_summary, "summary_MSE.csv", row.names = FALSE)
+print(results_summary)
+```
+
+```{r}
+# Wykres: Boxplot MSE
+ggplot(results_all, aes(x = case, y = mse, fill = model)) +
+  geom_boxplot(outlier.size = 0.5) +
+  theme_minimal() +
+  labs(title = "Porównanie MSE dla przypadków i modeli",
+       x = "Przypadek",
+       y = "MSE") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r}
+# Wykres: średnie MSE (słupki)
+ggplot(results_summary, aes(x = case, y = mean_MSE, fill = model)) +
+  geom_col(position = "dodge") +
+  theme_minimal() +
+  labs(title = "Średnie wartości MSE w poszczególnych przypadkach",
+       x = "Przypadek",
+       y = "Średnie MSE") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r}
+# Wykresy dopasowania (1 ramka z przypadku)
+for (case_name in cases) {
+  if (grepl("linear_corr_snorm", case_name)) {
+      # wyciągamy rho z nazwy, np. z 'rho0.5'
+      rho_val <- as.numeric(sub(".*rho", "", case_name))
+      df_list <- generate_data(case = "linear_corr_snorm", rho = rho_val)
+      
+    } else if (grepl("nonlinear_corr", case_name)) {
+      # wyciągamy a i b z nazwy, np. z 'a1.5b1'
+      ab_vals <- regmatches(case_name, gregexpr("[0-9\\.]+", case_name))[[1]]
+      a_val <- as.numeric(ab_vals[1])
+      b_val <- as.numeric(ab_vals[2])
+      df_list <- generate_data(case = "nonlinear_corr", a = a_val, b = b_val)
+      
+    } else {
+      df_list <- generate_data(case = case_name)
+    }
+  df <- df_list$df
+  
+  m1 <- lm(Y ~ X1 + X2, data = df)
+  m2 <- lm(Y ~ X1 + I(X2^2), data = df)
+  m3 <- lm(Y ~ X1 + X2 + I(X1*X2), data = df)
+  
+  df$pred_simple <- predict(m1, df)
+  df$pred_ideal  <- predict(m2, df)
+  df$pred_mixed  <- predict(m3, df)
+  
+  # wykres dopasowania (Y vs X2)
+  p <- ggplot(df, aes(x = X2, y = Y)) +
+    geom_point(alpha = 0.5) +
+    geom_line(aes(y = pred_simple, color = "Model 1: X1+X2"), linewidth = 0.7) +
+    geom_line(aes(y = pred_ideal, color = "Model 2: X1+X2^2"), linewidth = 0.7) +
+    geom_line(aes(y = pred_mixed, color = "Model 3: X1+X2+X1*X2"), linewidth = 0.7) +
+    scale_color_manual(values = c("darkred", "steelblue", "darkgreen")) +
+    labs(title = paste("Dopasowanie modeli -", case_name),
+         y = "Y", x = "X2", color = "Model") +
+    theme_minimal()
+  
+  print(p)
+}
+```
+
+```{r}
+
+# Diagnostyka modelu (dla jednej ramki z każdego przypadku)
+for (case_name in cases) {
+  
+  # generowanie danych z odpowiednimi parametrami
+  if (grepl("linear_corr_snorm", case_name)) {
+      # wyciągamy rho z nazwy, np. z 'rho0.5'
+      rho_val <- as.numeric(sub(".*rho", "", case_name))
+      df_list <- generate_data(case = "linear_corr_snorm", rho = rho_val)
+      
+    } else if (grepl("nonlinear_corr", case_name)) {
+      # wyciągamy a i b z nazwy, np. z 'a1.5b1'
+      ab_vals <- regmatches(case_name, gregexpr("[0-9\\.]+", case_name))[[1]]
+      a_val <- as.numeric(ab_vals[1])
+      b_val <- as.numeric(ab_vals[2])
+      df_list <- generate_data(case = "nonlinear_corr", a = a_val, b = b_val)
+  } else {
+    df_list <- generate_data(case = case_name)
+  }
+  
+  df <- df_list$df
+  
+  # dopasowanie modelu
+  model <- lm(Y ~ X1 + I(X2^2), data = df)
+  
+  # wykresy diagnostyczne
+  par(mfrow = c(2, 2))
+  plot(model, main = paste("Diagnostyka modelu:", case_name))
+}
+
+
+```
+
