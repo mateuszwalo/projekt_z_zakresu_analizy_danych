@@ -4,27 +4,31 @@ author: "Diana Morzhak, Mateusz Walo, Dominika Zydorczyk"
 format:
   html:
     embed-resources: true
-    code-fold: false
+    code-fold: true
+    code-summary: "Pokaż/Ukryj kod"
     code-tools: false
     self-contained: true
+    toc: true
 execute:
-  echo: false        
+  echo: true        
   warning: false    
   message: false     
   error: false        
 editor: visual
 ---
 
-# Wstęp i krótkie strzeszczenie projektu
+# Wstęp i krótkie streszczenie projektu
 
-# SZUM LOSOWY TEN EPSILON NASZ GENERUJMY TEŻ ZA KAŻDYM RAZEM A NIE NA SZTYWNO TJ. PO USTALENIU TEGO SEEDA ABY TEŻ BYŁO TUTAJ TROCHE TEGO WPŁYWU ROZKŁADU NIE WIEM WSM CZY GLOBALNIE BEDZIE OKEJ? TO NAM ODBIERA JAKBY LOSOWSCI DALEJ, WIEC DODAJMY LOSOWANIE SZUMU DO SRODKA TYCH PETLI
+Celem projektu jest zbadanie, w jaki sposób rozkład zmiennych objaśniających wpływa na wartość błędu średniokwadratowego ( $MSE$ ) w modelu regresji liniowej.
+
+Zagadnienie to jest istotne zarówno z teoretycznego, jak i praktycznego punktu widzenia - w szczególności w uczeniu maszynowym i analizie danych, gdzie poprawność założeń dotyczących rozkładu predyktorów wpływa na stabilność i trafność estymacji parametrów modelu.
 
 Rozpatrujemy wpływ rozkładu zmiennych objaśniającyh na błąd średniokwadratowy (MSE) w następującym modelu regresji liniowej:
 
 $$Y = 0.5 \ + \ X_1 \ + \ 0.6X_2^2 \ + \ \epsilon
 $$
 
-gdzie $X_1$ i $X_2$ są zmiennymi losowymi pochodzącymi z rozkładów zależnych od rozpatrywanej sytuacji (patrz niżej), natomiast $\epsilon$ jest szumem pochodzącym z rozkładu $N(0,0.1)$ - jest tak, ponieważ chcemy się skupić wyłącznie na wpływie rozkładu predykatorów. MSE definiujemy następująco:
+gdzie $X_1$ i $X_2$ są zmiennymi losowymi pochodzącymi z rozkładów zależnych od rozpatrywanej sytuacji (patrz niżej), natomiast $\epsilon$ jest szumem pochodzącym z rozkładu $N(0,0.1)$ - jest tak, ponieważ chcemy się skupić wyłącznie na wpływie rozkładu predyktorów. MSE definiujemy następująco:
 
 $$
 MSE=\frac{1}{n} \sum_{i=1}^n(Y_i-\hat{Y_i})^2
@@ -34,77 +38,67 @@ gdzie $Y=(Y_1, Y_2, ..., Y_n)$ jest wektorem wartości obserwowanych, natomiast 
 
 ## Lista rozpatrywanych przypadków
 
-Poniżej przedstawiono wszystkie przypadki, w których generowane są zmienne losowe $X_1$ i $X_2$ . Opisano zarówno przypadki niezależne, jak i zależne, z uwzględnieniem możliwej zależności liniowej, nieliniowej tych zmiennych oraz wpływu zmiennej ukrytej na nie:
-
-### a) Zmienne niezależne
+Poniżej przedstawiono wszystkie przypadki, w których generowane są zmienne losowe $X_1$ i $X_2$ . Opisano zarówno przypadki niezależne, jak i zależne, z uwzględnieniem możliwej zależności liniowej i nieliniowej tych zmiennych oraz wpływu zmiennej ukrytej na nie:
 
 1.  **double_snorm**\
     W tym przypadku zarówno $X_1$ , jak i $X_2$ pochodzą z rozkładu normalnego standaryzowanego: $X_1\sim \mathcal{N}(0,1), \ X_2 \sim \mathcal{N}(0,1)$
 
+    Ten przypadek jest naszym punktem odniesienia, ponieważ normalny rozkład standaryzowany jest symetryczny oraz ma umiarkowany rozrzut danych.
+
 2.  **double_unif_narrow**\
-    Zarówno $X_1$ , jak i $X_2$ są losowane z wąskiego rozkładu jednostajnego: $X_1 \sim \mathrm{U}(-3,3), X_2 \sim \mathrm{U}(-3,3)$
+    Zarówno $X_1$ , jak i $X_2$ są losowane z wąskiego rozkładu jednostajnego, gdzie zakres danych jest ograniczony, a gęstości prawdopodobieństwa sa równomierne: $X_1 \sim \mathrm{U}(-3,3), X_2 \sim \mathrm{U}(-3,3)$
 
 3.  **double_unif_wide**\
     W tym przypadku zmienne są losowane z szerszego rozkładu jednostajnego: $X_1\sim \mathrm{U}(-5,5), X_2 \sim \mathrm{U}(-5,5)$
 
 4.  **norm_exp**\
-    Zmienna $X_1$ ma rozkład normalny z większym odchyleniem standardowym, a $X_2$ pochodzi z rozkładu wykładniczego: $X_1 \sim \mathcal{N}(0, 2.9), \quad X_2 \sim \mathrm{Exp}(\lambda = 1.2)$
+    Zmienna $X_1$ ma rozkład normalny z większym odchyleniem standardowym, a $X_2$ pochodzi z rozkładu wykładniczego, co poszerza nasze badania o rozkład asymetryczny: $X_1 \sim \mathcal{N}(0, 2.9), \quad  X_2 \sim \mathrm{Exp}(\lambda = 1.2)$
 
 5.  **snorm_exp**\
-    Tutaj $X_1$ ma rozkład normalny standaryzowany, a $X_2$ - wykładniczy: $X_1 \sim \mathcal{N}(0,1), \quad X_2 \sim \mathrm{Exp}(\lambda = 1.2)$
+    Tutaj $X_1$ ma rozkład normalny standaryzowany, a $X_2$ - wykładniczy. Przypadek ten w zestawieniu z przypadkiem 4. pozwala zobaczyć wpływ wariancji rozkładu normalnego na MSE: $X_1 \sim \mathcal{N}(0,1), \quad X_2 \sim \mathrm{Exp}(\lambda = 1.2)$
 
-6.  **pois_snorm**\
-    Zmienna $X_1$ jest dyskretna z rozkładu Poisson'a, natomiast $X_2$ ma rozkład normalny standaryzowany: $X_1 \sim \mathrm{Pois}(\lambda = 2), \quad X_2 \sim \mathcal{N}(0,1)$
-
-7.  **bimodal_snorm**\
+6.  **bimodal_snorm**\
     W tym przypadku $X_1$ ma rozkład bimodalny, a $X_2$ - normalny standaryzowany: $X_1 \sim 0.43\cdot \mathcal{N}(-3,0.8) + 0.57\cdot \mathcal{N}(3,0.8), \quad X_2 \sim \mathcal{N}(0,1)$
 
-8.  **exp_norm**\
+    Dzięki temu zobaczymy, jak zmienia się MSE w przypadku gdy mamy dwie mody w jednym z rozkładów.
+
+7.  **exp_norm**\
     Zmienna $X_1$ pochodzi z rozkładu wykładniczego, a $X_2$ z normalnego: $X_1 \sim \mathrm{Exp}(\lambda = 1.2), \quad X_2 \sim \mathcal{N}(0, 2.9)$
 
-9.  **pois_norm**\
-    W tym przypadku $X_1$ pochodzi z rozkładu Poisson'a, a $X_2$ z rozkładu normalnego: $X_1 \sim \mathrm{Pois}(\lambda = 2), \quad X_2 \sim \mathcal{N}(0, 2.9)$
+    Tutaj sprawdzamy sytuację w pewnym sensie odwrotną do przypadku 4., czyli co się dzieje, gdy to zmienna $X_1$ ma duży ogon rozkładu.
 
-10. **t_snorm**\
+8.  **t_snorm**\
     Zmienna $X_1$ pochodzi z rozkładu t-Studenta z 3 stopniami swobody, a $X_2$ z rozkładu normalnego standaryzowanego: $X_1 \sim t(df=3), \quad X_2 \sim \mathcal{N}(0,1)$
 
-11. **t_norm**\
+9.  **t_norm**\
     Zmienna $X_1$ pochodzi z rozkładu t-Studenta, a $X_2$ z normalnego rozkładu o większej wariancji: $X_1 \sim t(df=3), \quad X_2 \sim \mathcal{N}(0,2.9)$
 
-12. **t_exp**\
+10. **t_exp**\
     Zmienna $X_1$ pochodzi z rozkładu t-Studenta, natomiast $X_2$ z rozkładu wykładniczego: $X_1 \sim t(df=3), \quad X_2 \sim \mathrm{Exp}(\lambda = 1.2)$
 
-### b) Zmienne zależne
+W przypadkach 10.-12. analizujemy wpływ grubych ogonów i wartości odstających na MSE. Te trzy sytuacje możemy porównywać z dowolnym z przypadków 1-9, gdzie zmienna objaśniająca $X_2$ ma dokładnie taki sam rozkład jak w przypadkach 10-12.
 
-#### i) Zależność liniowa
+11. **Korelacja liniowa**\
+    **linear_corr_snorm** Obie zmienne pochodzą z rozkładu normalnego standaryzowanego, ale wprowadzona jest między nimi korelacja $\rho$ : $(X_1, X_2) \sim \mathcal{N}\Big(\mu =\begin{pmatrix}0\\0\end{pmatrix},\Sigma =\begin{pmatrix}1 & \rho \\ \rho & 1\end{pmatrix}\Big)$\
+    Taki przypadek pozwala badać wpływ liniowej zależności między predyktorami
 
--   **linear_corr_snorm**\
-    Obie zmienne pochodzą z rozkładu normalnego standaryzowanego, ale wprowadzona jest między nimi korelacja $\rho$ : $(X_1, X_2) \sim \mathcal{N}\Big(\mu =\begin{pmatrix}0\\0\end{pmatrix},\Sigma =\begin{pmatrix}1 & \rho \\ \rho & 1\end{pmatrix}\Big)$\
-    Taki przypadek pozwala badać wpływ liniowej zależności między predykatorami
+12. **Zależność nieliniowa** **nonlinear_corr** Zmienna $X_2$ pochodzi z rozkładu normalnego standaryzowanego. Zmienna $X_1$ jest nieliniową funkcją zmiennej $X_2$ z dodatkiem szumu $\eta$ : $X_2 \sim \mathcal{N}(0,1), \quad X_1 = a \cdot e^{b X_2} + \eta, \quad \eta \sim \mathcal{N}(0,0.1)$\
+    Pozwala to na modelowanie przypadków, w których zależność między predyktorami jest wyraźnie nieliniowa
 
-#### ii) Zależność nieliniowa
+13. **Zmienne zależne od zmiennej ukrytej Z** **hidden_impact**
 
--   **nonlinear_corr**\
-    Zmienna $X_2$ pochodzi z rozkładu normalnego standaryzowanego. Zmienna $X_1$ jest nieliniową funkcją zmiennej $X_2$ z dodatkiem szumu $\eta$ : $X_2 \sim \mathcal{N}(0,1), \quad X_1 = a \cdot e^{b X_2} + \eta, \quad \eta \sim \mathcal{N}(0,0.1)$\
-    Pozwala to na modelowanie przypadków, w których zależność między predykatorami jest wyraźnie nieliniowa
+Tutaj zarówno $X_1$ , jak i $X_2$ zależą od wspólnej zmiennej ukrytej $Z$ : $X_1 = 2.7 Z + 12, \quad X_2 = 1.4 Z + 15, \quad Z \sim \mathcal{N}(0,1)$\
+Taki przypadek umożliwia zbadanie wpływu zmiennej ukrytej na obserwowane zmienne objaśniające
 
-### c) Zmienne zależne od zmiennej ukrytej Z
+Razem zbadamy 17 przypadków. Dla każdego z nich generować będziemy po 200 ramek danych, co da nam wystarczającą próbkę do porównywania wyników. Dla każdej z utworzonych ramek danych będziemy dopasowywać model regresji liniowej, zapiszemy uzyskane wyniki i porównamy je. Tym samym wyciągniemy najciekawsze informacje z wpływu różnych rozkładów predyktorów na wartość błędu średniokwadratowego tworzonej regresji.
 
--   **hidden_impact**\
-    Tutaj zarówno $X_1$ , jak i $X_2$ zależą od wspólnej zmiennej ukrytej $Z$ : $X_1 = 2.7 Z + 12, \quad X_2 = 1.4 Z + 15, \quad Z \sim \mathcal{N}(0,1)$\
-    Taki przypadek umożliwia zbadanie wpływu zmiennej ukrytej na obserwowane zmienne objaśniające
-
-Razem zbadamy 19 przypadków. Dla każdego z nich generować będziemy po 35 ramek danych, co da nam wystarczającą próbkę do porównywania wyników. Dla każdej z utworzonych ramek danych będziemy dopasowywać model regresji nieliniowej, zapiszemy uzyskane wyniki i porównamy je. Tym samym wyciągniemy najciekawsze informacje z wpływu różnych rozkładów predykatorów na wartość błędu średniokwadratowego tworzonej regresji.
-
-# 1. Generowanie danych
+# Generowanie danych
 
 ## Funkcja jako narzędzie
 
-Wprowadzamy funkcję `Y_true` , która oblicza wartości wektora Y na podstawie wygenerowanych danych. W ten sposób tworzymy "prawdziwe, rzeczywiste" dane.
+Wprowadzamy funkcję `Y_true` , która oblicza wartości wektora Y na podstawie wygenerowanych danych. Ponadto dodajemy `epsilon` oraz `eta`, czyli szum, aby nadać prawdziwym wartościom $Y$ losowości. W ten sposób tworzymy "prawdziwe, rzeczywiste" dane.
 
-Następnie definiujemy globalny `epsilon` oraz `eta` , aby ustalić deterministyczne ich wartości i aby te wartości nie wpływały mocno na wartość Y, co pozwoli nam na lepsze bezpośrednie porównanie wpływu właśnie rozkładów predykatorów, a nie błędów na wytwarzany MSE.
-
-Do generowania danych do każdego z wymienionych we wstępie przypadków rozkładu dannych zmiennych objaśniających wykorzystujemy funkcję `generate_data` . Uwzględnia ona wszystkie założenia rozpatrywanych przez nasz w tym projekcie scenariuszy. Generuje odpowiednie dane w zależności od wprowadzonego argumentu `case` (co tłumaczymy jako 'przypadek'). Następnie wygenerowane dane są zapisywane do ramki danych, która zawiera 4 kolumny:
+Do generowania danych do każdego z wymienionych we wstępie przypadków rozkładu danych zmiennych objaśniających wykorzystujemy funkcję `generate_data` . Uwzględnia ona wszystkie założenia rozpatrywanych przez nas w tym projekcie scenariuszy. Generuje odpowiednie dane w zależności od wprowadzonego argumentu `case` (co tłumaczymy jako 'przypadek'). Następnie wygenerowane dane są zapisywane do ramki danych, która zawiera 4 kolumny:
 
 -   X1 - wartości pierwszej zmiennej objaśniającej
 
@@ -112,31 +106,24 @@ Do generowania danych do każdego z wymienionych we wstępie przypadków rozkła
 
 -   Y - obliczone na podstawie wzoru (numer wzoru) wartości Y
 
--   Eps - losowy szum
+-   Eps - biały szum
 
 Funkcja zwraca tę ramkę danych oraz meta dane generatora rozkładu, czyli listę parametrów użytych podczas generowania danych. Parametry te można poznać poniżej. A zatem wynik funkcji `generate_data` to lista posiadająca dwa elementy:
 
-1.  `df` - wygenerowana ramka danych zgodnie z wybranym przypadkiem `case`
-2.  `meta` - meta dane przechowujące wartości parametrów użytych do generowania danych
+1.  df - wygenerowana ramka danych zgodnie z wybranym przypadkiem `case`
+2.  meta - meta dane przechowujące wartości parametrów użytych do generowania danych
 
 ```{r}
+#| include: false
 # wczytanie niezbędnych bibliotek
 library(dplyr)
 library(tidyverse)
 library(GGally)
 library(MASS)
-library(ggplot2)
-library(broom)
-library(purrr)
-library(tidyr)
-library(dplyr)
-library(tidyr) 
-library(purrr)
-library(car) 
-
 ```
 
 ```{r}
+#| echo: true
 # Funkcja służąca do obliczenia prawdziwych wartości Y
 Y_true <- function(x1, x2, epsilon){
   return (0.5+x1+0.6*x2*x2+epsilon)
@@ -144,10 +131,7 @@ Y_true <- function(x1, x2, epsilon){
 ```
 
 ```{r}
-# Globalna definicja szumu
-epsilon <- rnorm(120, sd = 0.1)
-# Globalna definicja szumu dla przypadku zmiennej zależnej
-eta <- rnorm(120, sd = 0.1)
+#| echo: true
 
 generate_data <- function(case, 
                           n = 120, # liczba generowanych obserwacji
@@ -157,6 +141,10 @@ generate_data <- function(case,
                           a = NULL, # wartość pierwszego współczynnika dla zależności nieliniowej
                           b = NULL # wartość drugiego współczynnika dla zależności nieliniowej
                           ){
+  # definicja szumu
+  epsilon <- rnorm(120, sd = 0.1)
+  # Globalna definicja szumu dla przypadku zmiennej zależnej
+  eta <- rnorm(120, sd = 0.1)
   
 # sprawdzamy, czy został podany obowiązkowy parametr dla danego przypadku generowania danych
   needed <- function(param, name){
@@ -165,7 +153,7 @@ generate_data <- function(case,
     }
   }
   
-  # przypadek, gdy oba predykatory mają rozkład normalny standaryzowany
+  # przypadek, gdy oba predyktory mają rozkład normalny standaryzowany
   if(case=="double_snorm"){
     x1 <- rnorm(n)
     x2 <- rnorm(n)
@@ -189,12 +177,6 @@ generate_data <- function(case,
     needed(exp_rate,"exp_rate")
     x1 <- rnorm(n)
     x2 <- rexp(n, rate = exp_rate)
-  # Zmienna X_1 pochodzi z rozkładu dyskretnego Poisson'a o lambdzie równej ,
-  # Zmienna X_2 pochodzi z rozkładu normalnego standaryzowanego
-  }else if(case == "pois_snorm"){
-    needed(lambda,"lambda")
-    x1 <- rpois(n,lambda = lambda)
-    x2 <- rnorm(n)
   # Zmienna X_1 pochodzi z rozkładu bimodalnego, a zmienna X_2 z normalnego
   # standaryzowanego
   }else if(case == "bimodal_snorm"){
@@ -212,15 +194,10 @@ generate_data <- function(case,
     needed(exp_rate,"exp_rate")
     x1 <- rexp(n, rate = exp_rate)
     x2 <- rnorm(n, sd = 2.9)
-  #Przypadek, gdy X_1 pochodzi z rozkładu Poisson'a, 
-  # a X_2 z rozkładu normalnego
-  }else if(case == "pois_norm"){
-    needed(lambda,"lambda")
-    x1 <- rpois(n, lambda = lambda)
-    x2 <-  rnorm(n, sd = 2.9)
+  }
   #X_1 pochodzi z rozkładu t-Studenta o trzech stopniach swobody,
   # a X_2 z rozkładu normalnego standaryzowanego
-  }else if(case == "t_snorm"){
+  else if(case == "t_snorm"){
     x1 <- rt(n,df = 3)
     x2 <- rnorm(n)
   #X_1 pochodzi z rozkładu t-Studenta o trzech stopniach swobody,
@@ -234,7 +211,7 @@ generate_data <- function(case,
     needed(exp_rate,"exp_rate")
     x1 <- rt(n, df = 3)
     x2 <- rexp(n, rate = exp_rate)
-  # Zmienne losowe X_1 i X_2 są liniowo zależne i pochodzą obie 
+  # Zmienne losowe X_1 i X_2 są liniowo skorelowane i pochodzą obie 
   # z rozkładu normalnego standaryzowanego
   }else if(case == "linear_corr_snorm"){
     needed(rho,"rho")
@@ -268,7 +245,7 @@ generate_data <- function(case,
     df <- data.frame(X1 = x1, X2 = x2, Y = 0.5+x1+0.6*x2*x2+z+epsilon, Eps=epsilon)
     colnames(df) <-  c("X1","X2","Y", "Eps")
     return(list(df = df, meta = meta, z = z))
-  } #dodać nonlinear_corr
+  }
   
   y <- Y_true(x1,x2,epsilon)
   df <- data.frame(X1 = x1, X2 = x2, Y = y, Eps = epsilon)
@@ -281,9 +258,13 @@ generate_data <- function(case,
 
 Sprawdźmy działanie naszych funkcji na poszczególnych przypadkach:
 
-# **KAŻDY WYKRES NIECH MA JAKIŚ OPIS, TYTUŁ Z JAKIEGO ROZKLADU POCHODZĄ DANE I DLACZEGO WYGLĄDA TO TAK JAK WYGLĄDA I OPIS TEGO CO NA NICH WIDAĆ!!!**
+Uwaga! Funkcja `ggpairs` wykonuje tzw. kernel density estimation podczas rysowania funkcji gęstości na podstawie realizacji prób pochodzących z przyjętych teoretycznych rozkładów. Biorąc pod uwagę również to, że nie generujemy bardzo dużej próbki danych dla naszych zmiennych, otrzymujemy przybliżone wykresy gęstości dla rozkładów prawdopodobieństwa ze wstępu na przekątnych widzianych poniżej obrazków.
+
+::: {.callout-note collapse="true" appearance="minimal"}
+### 1. Obie zmienne pochodzą z rozkładu normalnego standaryzowanego
 
 ```{r}
+#| echo: false
 #| message: false
 # sprawdzenie generowania danych dla zmiennych objaśniających pochodzących z rozkładu normalnego standaryzowanego
 results_double_snorm <- list(generate_data(case="double_snorm"),
@@ -293,12 +274,19 @@ results_double_snorm <- list(generate_data(case="double_snorm"),
 df1_double_snorm <- results_double_snorm[[1]]$df
 df2_double_snorm <- results_double_snorm[[2]]$df
 df3_double_snorm <- results_double_snorm[[3]]$df 
-ggpairs(df1_double_snorm)
-ggpairs(df2_double_snorm)
-ggpairs(df3_double_snorm)
+ggpairs(df1_double_snorm, title= "Macierz wykresów rozrzutu dla zmiennych w przypadku 1.")
+ggpairs(df2_double_snorm, title= "Macierz wykresów rozrzutu dla zmiennych w przypadku 1.")
+ggpairs(df3_double_snorm, title= "Macierz wykresów rozrzutu dla zmiennych w przypadku 1.")
 ```
 
+Wykresy funkcji gęstości zmiennych $X_1$ i $X_2$ przedstawiają rozkład normalny ze średnią w punkcie 0. Jednocześnie losowany szum nie zależy od żadnej zmiennej i jego rozkład jest zgodny z przyjętymi założeniami. Generowanie danych jest poprawne dla rozpatrywanego przypadku.
+:::
+
+::: {.callout-note collapse="true" appearance="minimal"}
+### 2. Obie zmienne pochodzą z rozkładu jednostajnego (przedział $[-3,3]$ )
+
 ```{r}
+#| echo: false
 #| message: false
 # sprawdzenie generowania danych dla zmiennych objaśniających pochodzących z rozkładu jednostajnego na odcinku [-3,3]
 results_unif_narrow <- list(generate_data(case="double_unif_narrow"),
@@ -308,12 +296,19 @@ results_unif_narrow <- list(generate_data(case="double_unif_narrow"),
 df1_unif_narrow <- results_unif_narrow[[1]]$df
 df2_unif_narrow <- results_unif_narrow[[2]]$df
 df3_unif_narrow <- results_unif_narrow[[3]]$df 
-ggpairs(df1_unif_narrow)
-ggpairs(df2_unif_narrow)
-ggpairs(df3_unif_narrow)
+ggpairs(df1_unif_narrow, title= "Macierz wykresów rozrzutu dla zmiennych w przypadku 2.")
+ggpairs(df2_unif_narrow, title= "Macierz wykresów rozrzutu dla zmiennych w przypadku 2.")
+ggpairs(df3_unif_narrow, title= "Macierz wykresów rozrzutu dla zmiennych w przypadku 2.")
 ```
 
+Gęstość prawdopodobieństwa równomiernie rozkłada się dla rozpatrywanych zmiennych objaśniających na przedziale $[-3;3]$. $\epsilon$ również nie zależy od żadnej zmiennej. Tym samym generowanie danych jest poprawne dla rozpatrywanego przypadku.
+:::
+
+::: {.callout-note collapse="true" appearance="minimal"}
+### 3. Obie zmienne pochodzą z rozkładu jednostajnego (przedział $[-5,5]$ )
+
 ```{r}
+#| echo: false
 #| message: false
 # sprawdzenie generowania danych dla zmiennych objaśniających pochodzących z rozkładu jednostajnego na odcinku [-5,5]
 results_unif_wide <- list(generate_data(case="double_unif_wide"),
@@ -323,12 +318,19 @@ results_unif_wide <- list(generate_data(case="double_unif_wide"),
 df1_unif_wide <- results_unif_wide[[1]]$df
 df2_unif_wide <- results_unif_wide[[2]]$df
 df3_unif_wide <- results_unif_wide[[3]]$df 
-ggpairs(df1_unif_wide)
-ggpairs(df2_unif_wide)
-ggpairs(df3_unif_wide)
+ggpairs(df1_unif_wide, , title= "Macierz wykresów rozrzutu dla zmiennych w przypadku 3.")
+ggpairs(df2_unif_wide,, title= "Macierz wykresów rozrzutu dla zmiennych w przypadku 3.")
+ggpairs(df3_unif_wide, title= "Macierz wykresów rozrzutu dla zmiennych w przypadku 3.")
 ```
 
+Gęstość prawdopodobieństwa równomiernie rozkłada się dla rozpatrywanych zmiennych objaśniających na przedziale $[-5;5]$. $\epsilon$ również nie zależy od żadnej zmiennej. Tym samym generowanie danych jest poprawne dla rozpatrywanego przypadku.
+:::
+
+::: {.callout-note collapse="true" appearance="minimal"}
+### 4. X1 pochodzi z rozkładu normalnego, a zmienna X2 z rozkładu wykładniczego
+
 ```{r}
+#| echo: false
 #| message: false
 # sprawdzenie generowania danych dla zmiennych X_1 i X_2 pochodzących z rozkładu 
 #normalnego o średniej 0 i odchyleniu standardowym 2.9 oraz rozkładu wykładniczego
@@ -340,12 +342,19 @@ results_norm_exp <- list(generate_data(case="norm_exp"),
 df1_norm_exp <- results_norm_exp[[1]]$df
 df2_norm_exp <- results_norm_exp[[2]]$df
 df3_norm_exp <- results_norm_exp[[3]]$df 
-ggpairs(df1_norm_exp)
-ggpairs(df2_norm_exp)
-ggpairs(df3_norm_exp)
+ggpairs(df1_norm_exp , title= "Macierz wykresów rozrzutu dla zmiennych w przypadku 4.")
+ggpairs(df2_norm_exp, title= "Macierz wykresów rozrzutu dla zmiennych w przypadku 4.")
+ggpairs(df3_norm_exp, title= "Macierz wykresów rozrzutu dla zmiennych w przypadku 4.")
 ```
 
+Wykresy gęstości jądrowej zgadzają się z założonymi rozkładami.
+:::
+
+::: {.callout-note collapse="true" appearance="minimal"}
+### 5. Zmienna X1 jest z rozkładu normalnego standaryzowanego, a zmienna X2 z rozkładu wykładniczego
+
 ```{r}
+#| echo: false
 #| message: false
 # sprawdzenie generowania danych dla zmiennych X_1 i X_2 pochodzących z rozkładu 
 #normalnego standaryzowanego oraz rozkładu wykładniczego
@@ -357,27 +366,19 @@ results_snorm_exp <- list(generate_data(case="snorm_exp"),
 df1_snorm_exp <- results_snorm_exp[[1]]$df
 df2_snorm_exp <- results_snorm_exp[[2]]$df
 df3_snorm_exp <- results_snorm_exp[[3]]$df 
-ggpairs(df1_snorm_exp)
-ggpairs(df2_snorm_exp)
-ggpairs(df3_snorm_exp)
+ggpairs(df1_snorm_exp, title= "Macierz wykresów rozrzutu dla zmiennych w przypadku 5.")
+ggpairs(df2_snorm_exp, title= "Macierz wykresów rozrzutu dla zmiennych w przypadku 5.")
+ggpairs(df3_snorm_exp, title= "Macierz wykresów rozrzutu dla zmiennych w przypadku 5.")
 ```
 
-```{r}
-#| message: false
-# sprawdzenie generowania danych dla zmiennych X_1 i X_2 pochodzących z rozkładu Poisson'a o lambdzie równej 2 oraz z rozkładu 
-#normalnego standaryzowanego odpowiednio
-results_pois_snorm <- list(generate_data(case="pois_snorm"),
-                             generate_data(case="pois_snorm"),
-                             generate_data(case="pois_snorm"))
+Podobnie jak w poprzednim podpunkcie: generowane dane są zgodne z naszymi założeniami dla tego przypadku. Wartym uwagi jest współczynnik korelacji liniowej Pearsona dla zmiennej $X_2$ oraz $Y$, którego wartość jest istotna statystycznie i bliska 1. W rzeczywistości wykres kropkowy przedstawia inną sytuację - zależność jest nieliniowa, a przy większej liczbie obserwacji i przy wzroście wartości zmiennej $X_2$, $Y$ wzrasta wykładniczo w stosunku do tej zmiennej - jest to prawdziwa sytuacja.
+:::
 
-df1_pois_snorm<- results_pois_snorm[[1]]$df
-df2_pois_snorm <- results_pois_snorm[[2]]$df
-df3_pois_snorm <- results_pois_snorm[[3]]$df
-#INNY WYKRES
-
-```
+::: {.callout-note collapse="true" appearance="minimal"}
+### 6. Zmienna X1 jest o rozkładzie bimodalnym, a X2 o rozkładzie normalnym standaryzowanym
 
 ```{r}
+#| echo: false
 #| message: false
 # sprawdzenie generowania danych dla zmiennych X_1 i X_2, gdy pierwsza pochodzi z rozkładu bimodalnego
 # a druga z rozkładu normalnego standaryzowanego
@@ -388,12 +389,19 @@ results_bimodal_snorm <- list(generate_data(case="bimodal_snorm"),
 df1_bimodal_snorm <- results_bimodal_snorm[[1]]$df
 df2_bimodal_snorm <- results_bimodal_snorm[[2]]$df
 df3_bimodal_snorm <- results_bimodal_snorm[[3]]$df 
-ggpairs(df1_bimodal_snorm)
-ggpairs(df2_bimodal_snorm)
-ggpairs(df3_bimodal_snorm)
+ggpairs(df1_bimodal_snorm, title= "Macierz wykresów rozrzutu dla zmiennych w przypadku 7.")
+ggpairs(df2_bimodal_snorm, title= "Macierz wykresów rozrzutu dla zmiennych w przypadku 7.")
+ggpairs(df3_bimodal_snorm, title= "Macierz wykresów rozrzutu dla zmiennych w przypadku 7.")
 ```
 
+Z powyższych wykresów widzimy, że rozkład generowanych zmiennych zgadza się z założeniami dla tego przypadku. Zwracamy tu uwagę na dwie mody występujące w rozkładzie zmiennej $X_1$ oraz na rozkład prawdopodobieństwa dla zmiennej $X_2$ ze średnią wartością bliską 0.
+:::
+
+::: {.callout-note collapse="true" appearance="minimal"}
+### 7. Zmienna X1 pochodzi z rozkładu wykładniczego, a X2 - z rozkładu normalnego
+
 ```{r}
+#| echo: false
 #| message: false
 # sprawdzenie generowania danych dla zmiennych X_1 i X_2, gdy pierwsza pochodzi z rozkładu wykładniczego,
 # a druga z rozkładu normalnego
@@ -404,25 +412,19 @@ results_exp_norm <- list(generate_data(case="exp_norm"),
 df1_exp_norm <- results_exp_norm[[1]]$df
 df2_exp_norm <- results_exp_norm[[2]]$df
 df3_exp_norm <- results_exp_norm[[3]]$df 
-ggpairs(df1_exp_norm)
-ggpairs(df2_exp_norm)
-ggpairs(df3_exp_norm)
+ggpairs(df1_exp_norm, title= "Macierz wykresów rozrzutu dla zmiennych w przypadku 8.")
+ggpairs(df2_exp_norm, title= "Macierz wykresów rozrzutu dla zmiennych w przypadku 8.")
+ggpairs(df3_exp_norm, title= "Macierz wykresów rozrzutu dla zmiennych w przypadku 8.")
 ```
 
-```{r}
-#| message: false
-# sprawdzenie generowania danych dla zmiennych X_1 i X_2 pochodzących z rozkładu Poisson'a o lambdzie równej 2 oraz z rozkładu 
-#normalnego odpowiednio
-results_pois_norm <- list(generate_data(case="pois_norm"),
-                             generate_data(case="pois_norm"),
-                             generate_data(case="pois_norm"))
+Widzimy, że wykres gęstości prawdopodobieństwa dla zmiennej $X_1$ jest zgodny z wykresem rozkładu wykładniczego, a rozkład zmienej $X_2$ jest rozkładem normalnym ze średnią bliską 0 oraz nieco większym rozrzutem, czyli wariancją danych niż w rozkładzie normalnym standaryzowanym, co właśnie chcieliśmy osiągnąć. Biorąc powyższe pod uwagę oraz to, że korzystaliśmy z funkcji programu R do losowania wartości obserwacji z interesujących nas rozkładów, stwierdzamy, że dane te zostały wygenerowane zgodnie z oczekiwaniami dla tego przypadku.
+:::
 
-df1_pois_norm<- results_pois_norm[[1]]$df
-df2_pois_norm <- results_pois_norm[[2]]$df
-df3_pois_norm <- results_pois_norm[[3]]$df
-```
+::: {.callout-note collapse="true" appearance="minimal"}
+### 8. Zmienna X1 pochodzi z rozkładu t-Studenta z trzema stopniami swobody, a zmienna X2 - z rozkładu normalnego standaryzowanego
 
 ```{r}
+#| echo: false
 #| message: false
 # sprawdzenie generowania danych dla zmiennych X_1 i X_2, gdy pierwsza pochodzi z rozkładu t-Studenta o trzech stopniach swobody,
 # a druga z rozkładu normalnego standaryzowanego
@@ -433,12 +435,19 @@ results_t_snorm <- list(generate_data(case="t_snorm"),
 df1_t_snorm <- results_t_snorm[[1]]$df
 df2_t_snorm <- results_t_snorm[[2]]$df
 df3_t_snorm <- results_t_snorm[[3]]$df 
-ggpairs(df1_t_snorm)
-ggpairs(df2_t_snorm)
-ggpairs(df3_t_snorm)
+ggpairs(df1_t_snorm, title= "Macierz wykresów rozrzutu dla zmiennych w przypadku 10.")
+ggpairs(df2_t_snorm, title= "Macierz wykresów rozrzutu dla zmiennych w przypadku 10.")
+ggpairs(df3_t_snorm, title= "Macierz wykresów rozrzutu dla zmiennych w przypadku 10.")
 ```
 
+Widzimy, jak w tym scenariuszu układają się ciężkie ogony przy rozkładzie t-Studenta z trzema stopniami swobody zmiennej $X_1$, i obserwujemy już wielokrotnie spotykany przedtem przypadek rozkładu normalnego standaryzowanego zmiennej $X_2$ . Otrzymujemy zatem te rozkłady danych, których się spodziewamy.
+:::
+
+::: {.callout-note collapse="true" appearance="minimal"}
+### 9. Zmienna X1 pochodzi z rozkładu t-Studenta z trzema stopniami swobody, a zmienna X2 - z rozkładu normalnego
+
 ```{r}
+#| echo: false
 #| message: false
 # sprawdzenie generowania danych dla zmiennych X_1 i X_2, gdy pierwsza pochodzi z rozkładu t-Studenta o trzech stopniach swobody,
 # a druga z rozkładu normalnego 
@@ -449,12 +458,19 @@ results_t_norm <- list(generate_data(case="t_norm"),
 df1_t_norm <- results_t_norm[[1]]$df
 df2_t_norm <- results_t_norm[[2]]$df
 df3_t_norm <- results_t_norm[[3]]$df 
-ggpairs(df1_t_norm)
-ggpairs(df2_t_norm)
-ggpairs(df3_t_norm)
+ggpairs(df1_t_norm, title= "Macierz wykresów rozrzutu dla zmiennych w przypadku 11.")
+ggpairs(df2_t_norm, title= "Macierz wykresów rozrzutu dla zmiennych w przypadku 11.")
+ggpairs(df3_t_norm, title= "Macierz wykresów rozrzutu dla zmiennych w przypadku 11.")
 ```
 
+Pomijamy opis tego przypadku, ponieważ jest niemalże identyczny do opisu przypadku nr. 6 z jedyną różnicą w tym, że zmienna $X_2$ pochodzi z rozkładu normalnego, który nie jest standaryzowany. Dane zostały wygenerowany w sposób zgodny z założeniem.
+:::
+
+::: {.callout-note collapse="true" appearance="minimal"}
+### 10. Zmienna X1 pochodzi z rozkładu t-Studenta z trzema stopniami swobody, a zmienna X2 - z rozkładu wykładniczego
+
 ```{r}
+#| echo: false
 #| message: false
 # sprawdzenie generowania danych dla zmiennych X_1 i X_2, gdy pierwsza pochodzi z rozkładu t-Studenta o trzech stopniach swobody,
 # a druga z rozkładu wykładniczego 
@@ -465,14 +481,21 @@ results_t_exp <- list(generate_data(case="t_exp"),
 df1_t_exp <- results_t_exp[[1]]$df
 df2_t_exp <- results_t_exp[[2]]$df
 df3_t_exp <- results_t_exp[[3]]$df 
-ggpairs(df1_t_exp)
-ggpairs(df2_t_exp)
-ggpairs(df3_t_exp)
+ggpairs(df1_t_exp, title= "Macierz wykresów rozrzutu dla zmiennych w przypadku 12.")
+ggpairs(df2_t_exp, title= "Macierz wykresów rozrzutu dla zmiennych w przypadku 12.")
+ggpairs(df3_t_exp, title= "Macierz wykresów rozrzutu dla zmiennych w przypadku 12.")
 ```
 
+Widzimy charakterystyczne dla rozkładu t-Studenta z trzema stopniami swobody (zmienna $X_1$) i dla rozkładu wykładniczego (zmienna $X_2$ ) wykresy gęstości prawdopodobieństwa. Za każdym razem losowania kolejnych ramek danych otrzymujemy zbliżone wyniki, co sprawia, że dane dla tego przypadku są poprawnie generowane.
+:::
+
+::: {.callout-note collapse="true" appearance="minimal"}
+### 11-13. Przypadek skorelowanych zmiennych
+
 ```{r}
+#| echo: false
 #| message: false
-# sprawdzenie generowania danych dla zmiennych X_1 i X_2, gdy są one liniowo zależne 
+# sprawdzenie generowania danych dla zmiennych X_1 i X_2, gdy są one liniowo skorelowane 
 #i obie pochodzą z rozkładu normalnego standaryzowanego
 results_linear_corr <- list(generate_data(case="linear_corr_snorm", rho = 0.8),
                              generate_data(case="linear_corr_snorm", rho = 0.8),
@@ -486,7 +509,14 @@ ggpairs(df2_linear_corr)
 ggpairs(df3_linear_corr)
 ```
 
+Obserwujemy silną dodatnią korelację dla zmiennych $X_1$ i $X_2$ pochodzących z dwuwymiarowego rozkładu normalnego. Dane w tym przypadku są generowane zgodnie z oczekiwaniami.
+:::
+
+::: {.callout-note collapse="true" appearance="minimal"}
+### 14-16. Przypadek zmiennych zależnych nieliniowo
+
 ```{r}
+#| echo: false
 #| message: false
 # zmienna X_1 jest nieliniową funkcją zmiennej X_2
 results_nonlinear_corr <- list(generate_data(case="nonlinear_corr", a=1,b=1.5),
@@ -501,7 +531,14 @@ ggpairs(df2_nonlinear_corr)
 ggpairs(df3_nonlinear_corr)
 ```
 
+Wykres gęstości prawdopodobieństwa dla zmiennej $X_2$ wskazuje, że pochodzi ona z rozkładu normalnego standaryzowanego, co się zgadza z naszymi założeniami. Widzimy również statystycznie istotną wartość korelacji pomiędzy zmiennymi $X_1$ i $X_2$. Korelacja co prawda jest, ale wiemy, że jest ona nieliniowa (mamy do czynienia z monotoniczną zależnością nieliniową). Nasze założenia są spełnione.
+:::
+
+::: {.callout-note collapse="true" appearance="minimal"}
+### 17. Zmienna ukryta
+
 ```{r}
+#| echo: false
 #| message: false
 # Istnieje zmienna ukryta
 results_hidden_impact <- list(generate_data(case="hidden_impact"),
@@ -516,434 +553,191 @@ ggpairs(df2_hidden_impact)
 ggpairs(df3_hidden_impact)
 ```
 
+Widzimy niemalże perfekcyjną korelację liniową pomiędzy zmiennymi objaśniającymi, ale wiemy, że kryje się za tym zmienna $Z$ pochodząca z rozkładu normalnego, która to uzależnia od siebie zmienne $X_1$ oraz $X_2$. Szczegóły tego przypadku rozpatrujemy w części 3. tego projektu.
+:::
+
 ## Krótka charakterystyka generowanych danych
 
-Poniższa tabela zawiera empiryczne informacje co do wygenerowanych ramek danych. Pozwala to na porównanie poprawności otrzymywanych rozkładów.
-
-# **TĄ TABELE ZROBIC DLA JEDNEJ PROBY PER ROZKLAD BO JEST ZA DLUGO I ODBIORA DOSTANIE OCZOPLĄSU ABY OGARNAC ALL, JEDEN WIERSZ PER ROZKLAD WYSTARCZY MOIM ZDANIEM I CZEMU TUTAJ MAMY KORELACJE XÓW MIEDZY SOBĄ? CO ONA NAM MÓWI W TEJ TABELI? - WYJASNIENIE JAKIES + WYRZUCIC WTEDY KOLUMNE RUN JESLI NIE UWZLEGINIAMY TYCH RUNÓW**
+Poniższa tabela zawiera empiryczne i teoretyczne informacje dotyczące wygenerowanych ramek danych. Pozwala to na porównanie poprawności otrzymywanych rozkładów.
 
 ```{r}
-
-# każdy wektor parametrów wygenerowanych rozkładów zawiera po kolei:
-# wartość empirycznej średniej zmiennej X1
-# wartość empirycznej wariancji zmiennej X1
-# wartość empirycznej średniej zmiennej X2
-# wartość empirycznej wariancji zmiennej X2
-# wartość współczynnika korelacji pomiędzy tymi zmiennymi 
-double_snorm_param1 <- c(sum(df1_double_snorm$X1)/length(df1_double_snorm$X1),
-                         var(df1_double_snorm$X1),
-                         sum(df1_double_snorm$X2)/length(df1_double_snorm$X2),
-                         var(df1_double_snorm$X2),
-                         cor(df1_double_snorm$X1,df1_double_snorm$X2))
-double_snorm_param2 <- c(sum(df2_double_snorm$X1)/length(df2_double_snorm$X1),
-                         var(df2_double_snorm$X1),
-                         sum(df2_double_snorm$X2)/length(df2_double_snorm$X2),
-                         var(df2_double_snorm$X2),
-                         cor(df2_double_snorm$X1,df2_double_snorm$X2))
-double_snorm_param3 <- c(sum(df3_double_snorm$X1)/length(df3_double_snorm$X1),
-                         var(df3_double_snorm$X1),
-                         sum(df3_double_snorm$X2)/length(df3_double_snorm$X2),
-                         var(df3_double_snorm$X2),
-                         cor(df3_double_snorm$X1,df3_double_snorm$X2))
-
-double_unif_narrow1 <- c(sum(df1_unif_narrow$X1)/length(df1_unif_narrow$X1),
-                         var(df1_unif_narrow$X1),
-                         sum(df1_unif_narrow$X2)/length(df1_unif_narrow$X2),
-                         var(df1_unif_narrow$X2),
-                         cor(df1_unif_narrow$X1,df1_unif_narrow$X2))
-double_unif_narrow2 <- c(sum(df2_unif_narrow$X1)/length(df2_unif_narrow$X1),
-                         var(df2_unif_narrow$X1),
-                         sum(df2_unif_narrow$X2)/length(df2_unif_narrow$X2),
-                         var(df2_unif_narrow$X2),
-                         cor(df2_unif_narrow$X1,df2_unif_narrow$X2))
-double_unif_narrow3 <- c(sum(df3_unif_narrow$X1)/length(df3_unif_narrow$X1),
-                         var(df3_unif_narrow$X1),
-                         sum(df3_unif_narrow$X2)/length(df3_unif_narrow$X2),
-                         var(df3_unif_narrow$X2),
-                         cor(df3_unif_narrow$X1,df3_unif_narrow$X2))
-
-double_unif_wide1 <- c(sum(df1_unif_wide$X1)/length(df1_unif_wide$X1),
-                         var(df1_unif_wide$X1),
-                         sum(df1_unif_wide$X2)/length(df1_unif_wide$X2),
-                         var(df1_unif_wide$X2),
-                         cor(df1_unif_wide$X1,df1_unif_wide$X2))
-double_unif_wide2 <- c(sum(df2_unif_wide$X1)/length(df2_unif_wide$X1),
-                         var(df2_unif_wide$X1),
-                         sum(df2_unif_wide$X2)/length(df2_unif_wide$X2),
-                         var(df2_unif_wide$X2),
-                         cor(df2_unif_wide$X1,df2_unif_wide$X2))
-double_unif_wide3 <- c(sum(df3_unif_wide$X1)/length(df3_unif_wide$X1),
-                         var(df3_unif_wide$X1),
-                         sum(df3_unif_wide$X2)/length(df3_unif_wide$X2),
-                         var(df3_unif_wide$X2),
-                         cor(df3_unif_wide$X1,df3_unif_wide$X2))
-
-norm_exp1 <- c(sum(df1_norm_exp$X1)/length(df1_norm_exp$X1),
-              var(df1_norm_exp$X1),
-              sum(df1_norm_exp$X2)/length(df1_norm_exp$X2),
-              var(df1_norm_exp$X2),
-              cor(df1_norm_exp$X1,df1_norm_exp$X2))
-norm_exp2 <- c(sum(df2_norm_exp$X1)/length(df2_norm_exp$X1),
-              var(df2_norm_exp$X1),
-              sum(df2_norm_exp$X2)/length(df2_norm_exp$X2),
-              var(df2_norm_exp$X2),
-              cor(df2_norm_exp$X1,df2_norm_exp$X2))
-norm_exp3 <- c(sum(df3_norm_exp$X1)/length(df3_norm_exp$X1),
-              var(df3_norm_exp$X1),
-              sum(df3_norm_exp$X2)/length(df3_norm_exp$X2),
-              var(df3_norm_exp$X2),
-              cor(df3_norm_exp$X1,df3_norm_exp$X2))
-
-snorm_exp1 <- c(sum(df1_snorm_exp$X1)/length(df1_snorm_exp$X1),
-              var(df1_snorm_exp$X1),
-              sum(df1_snorm_exp$X2)/length(df1_snorm_exp$X2),
-              var(df1_snorm_exp$X2),
-              cor(df1_snorm_exp$X1,df1_snorm_exp$X2))
-snorm_exp2 <- c(sum(df2_snorm_exp$X1)/length(df2_snorm_exp$X1),
-              var(df2_snorm_exp$X1),
-              sum(df2_snorm_exp$X2)/length(df2_snorm_exp$X2),
-              var(df2_snorm_exp$X2),
-              cor(df2_snorm_exp$X1,df2_snorm_exp$X2))
-snorm_exp3 <- c(sum(df3_snorm_exp$X1)/length(df3_snorm_exp$X1),
-              var(df3_snorm_exp$X1),
-              sum(df3_snorm_exp$X2)/length(df3_snorm_exp$X2),
-              var(df3_snorm_exp$X2),
-              cor(df3_snorm_exp$X1,df3_snorm_exp$X2))
-
-pois_snorm1 <- c(sum(df1_pois_snorm$X1)/length(df1_pois_snorm$X1),
-              var(df1_pois_snorm$X1),
-              sum(df1_pois_snorm$X2)/length(df1_pois_snorm$X2),
-              var(df1_pois_snorm$X2),
-              cor(df1_pois_snorm$X1,df1_pois_snorm$X2))
-pois_snorm2 <- c(sum(df2_pois_snorm$X1)/length(df2_pois_snorm$X1),
-              var(df2_pois_snorm$X1),
-              sum(df2_pois_snorm$X2)/length(df2_pois_snorm$X2),
-              var(df2_pois_snorm$X2),
-              cor(df2_pois_snorm$X1,df2_pois_snorm$X2))
-pois_snorm3 <- c(sum(df3_pois_snorm$X1)/length(df3_pois_snorm$X1),
-              var(df3_pois_snorm$X1),
-              sum(df3_pois_snorm$X2)/length(df3_pois_snorm$X2),
-              var(df3_pois_snorm$X2),
-              cor(df3_pois_snorm$X1,df3_pois_snorm$X2))
-
-bimodal_snorm1 <- c(sum(df1_bimodal_snorm$X1)/length(df1_bimodal_snorm$X1),
-              var(df1_bimodal_snorm$X1),
-              sum(df1_bimodal_snorm$X2)/length(df1_bimodal_snorm$X2),
-              var(df1_bimodal_snorm$X2),
-              cor(df1_bimodal_snorm$X1,df1_bimodal_snorm$X2))
-bimodal_snorm2 <- c(sum(df2_bimodal_snorm$X1)/length(df2_bimodal_snorm$X1),
-              var(df2_bimodal_snorm$X1),
-              sum(df2_bimodal_snorm$X2)/length(df2_bimodal_snorm$X2),
-              var(df2_bimodal_snorm$X2),
-              cor(df2_bimodal_snorm$X1,df2_bimodal_snorm$X2))
-bimodal_snorm3 <- c(sum(df3_bimodal_snorm$X1)/length(df3_bimodal_snorm$X1),
-              var(df3_bimodal_snorm$X1),
-              sum(df3_bimodal_snorm$X2)/length(df3_bimodal_snorm$X2),
-              var(df3_bimodal_snorm$X2),
-              cor(df3_bimodal_snorm$X1,df3_bimodal_snorm$X2))
-
-exp_norm1 <- c(sum(df1_exp_norm$X1)/length(df1_exp_norm$X1),
-              var(df1_exp_norm$X1),
-              sum(df1_exp_norm$X2)/length(df1_exp_norm$X2),
-              var(df1_exp_norm$X2),
-              cor(df1_exp_norm$X1,df1_exp_norm$X2))
-exp_norm2 <- c(sum(df2_exp_norm$X1)/length(df2_exp_norm$X1),
-              var(df2_exp_norm$X1),
-              sum(df2_exp_norm$X2)/length(df2_exp_norm$X2),
-              var(df2_exp_norm$X2),
-              cor(df2_exp_norm$X1,df2_exp_norm$X2))
-exp_norm3 <- c(sum(df3_exp_norm$X1)/length(df3_exp_norm$X1),
-              var(df3_exp_norm$X1),
-              sum(df3_exp_norm$X2)/length(df3_exp_norm$X2),
-              var(df3_exp_norm$X2),
-              cor(df3_exp_norm$X1,df3_exp_norm$X2))
-
-
-pois_norm1 <- c(sum(df1_pois_norm$X1)/length(df1_pois_norm$X1),
-              var(df1_pois_norm$X1),
-              sum(df1_pois_norm$X2)/length(df1_pois_norm$X2),
-              var(df1_pois_norm$X2),
-              cor(df1_pois_norm$X1,df1_pois_norm$X2))
-pois_norm2 <- c(sum(df2_pois_norm$X1)/length(df2_pois_norm$X1),
-              var(df2_pois_norm$X1),
-              sum(df2_pois_norm$X2)/length(df2_pois_norm$X2),
-              var(df2_pois_norm$X2),
-              cor(df2_pois_norm$X1,df2_pois_norm$X2))
-pois_norm3 <- c(sum(df3_pois_norm$X1)/length(df3_pois_norm$X1),
-              var(df3_pois_norm$X1),
-              sum(df3_pois_norm$X2)/length(df3_pois_norm$X2),
-              var(df3_pois_norm$X2),
-              cor(df3_pois_norm$X1,df3_pois_norm$X2))
-
-t_snorm1 <- c(sum(df1_t_snorm$X1)/length(df1_t_snorm$X1),
-              var(df1_t_snorm$X1),
-              sum(df1_t_snorm$X2)/length(df1_t_snorm$X2),
-              var(df1_t_snorm$X2),
-              cor(df1_t_snorm$X1,df1_t_snorm$X2))
-t_snorm2 <- c(sum(df2_t_snorm$X1)/length(df2_t_snorm$X1),
-              var(df2_t_snorm$X1),
-              sum(df2_t_snorm$X2)/length(df2_t_snorm$X2),
-              var(df2_t_snorm$X2),
-              cor(df2_t_snorm$X1,df2_t_snorm$X2))
-t_snorm3 <- c(sum(df3_t_snorm$X1)/length(df3_t_snorm$X1),
-              var(df3_t_snorm$X1),
-              sum(df3_t_snorm$X2)/length(df3_t_snorm$X2),
-              var(df3_t_snorm$X2),
-              cor(df3_t_snorm$X1,df3_t_snorm$X2))
-
-t_norm1 <- c(sum(df1_t_norm$X1)/length(df1_t_norm$X1),
-              var(df1_t_norm$X1),
-              sum(df1_t_norm$X2)/length(df1_t_norm$X2),
-              var(df1_t_norm$X2),
-              cor(df1_t_norm$X1,df1_t_norm$X2))
-t_norm2 <- c(sum(df2_t_norm$X1)/length(df2_t_norm$X1),
-              var(df2_t_norm$X1),
-              sum(df2_t_norm$X2)/length(df2_t_norm$X2),
-              var(df2_t_norm$X2),
-              cor(df2_t_norm$X1,df2_t_norm$X2))
-t_norm3 <- c(sum(df3_t_norm$X1)/length(df3_t_norm$X1),
-              var(df3_t_norm$X1),
-              sum(df3_t_norm$X2)/length(df3_t_norm$X2),
-              var(df3_t_norm$X2),
-              cor(df3_t_norm$X1,df3_t_norm$X2))
-
-t_exp1 <- c(sum(df1_t_exp$X1)/length(df1_t_exp$X1),
-              var(df1_t_exp$X1),
-              sum(df1_t_exp$X2)/length(df1_t_exp$X2),
-              var(df1_t_exp$X2),
-              cor(df1_t_exp$X1,df1_t_exp$X2))
-t_exp2 <- c(sum(df2_t_exp$X1)/length(df2_t_exp$X1),
-              var(df2_t_exp$X1),
-              sum(df2_t_exp$X2)/length(df2_t_exp$X2),
-              var(df2_t_exp$X2),
-              cor(df2_t_exp$X1,df2_t_exp$X2))
-t_exp3 <- c(sum(df3_t_exp$X1)/length(df3_t_exp$X1),
-              var(df3_t_exp$X1),
-              sum(df3_t_exp$X2)/length(df3_t_exp$X2),
-              var(df3_t_exp$X2),
-              cor(df3_t_exp$X1,df3_t_exp$X2))
-
-linear_corr1 <- c(sum(df1_linear_corr$X1)/length(df1_linear_corr$X1),
-              var(df1_linear_corr$X1),
-              sum(df1_linear_corr$X2)/length(df1_linear_corr$X2),
-              var(df1_linear_corr$X2),
-              cor(df1_linear_corr$X1,df1_linear_corr$X2))
-linear_corr2 <- c(sum(df2_linear_corr$X1)/length(df2_linear_corr$X1),
-              var(df2_linear_corr$X1),
-              sum(df2_linear_corr$X2)/length(df2_linear_corr$X2),
-              var(df2_linear_corr$X2),
-              cor(df2_linear_corr$X1,df2_linear_corr$X2))
-linear_corr3 <- c(sum(df3_linear_corr$X1)/length(df3_linear_corr$X1),
-              var(df3_linear_corr$X1),
-              sum(df3_linear_corr$X2)/length(df3_linear_corr$X2),
-              var(df3_linear_corr$X2),
-              cor(df3_linear_corr$X1,df3_linear_corr$X2))
-
-nonlinear_corr1 <- c(sum(df1_nonlinear_corr$X1)/length(df1_nonlinear_corr$X1),
-              var(df1_nonlinear_corr$X1),
-              sum(df1_nonlinear_corr$X2)/length(df1_nonlinear_corr$X2),
-              var(df1_nonlinear_corr$X2),
-              cor(df1_nonlinear_corr$X1,df1_nonlinear_corr$X2))
-nonlinear_corr2 <- c(sum(df2_nonlinear_corr$X1)/length(df2_nonlinear_corr$X1),
-              var(df2_nonlinear_corr$X1),
-              sum(df2_nonlinear_corr$X2)/length(df2_nonlinear_corr$X2),
-              var(df2_nonlinear_corr$X2),
-              cor(df2_nonlinear_corr$X1,df2_nonlinear_corr$X2))
-nonlinear_corr3 <- c(sum(df3_nonlinear_corr$X1)/length(df3_nonlinear_corr$X1),
-              var(df3_nonlinear_corr$X1),
-              sum(df3_nonlinear_corr$X2)/length(df3_nonlinear_corr$X2),
-              var(df3_nonlinear_corr$X2),
-              cor(df3_nonlinear_corr$X1,df3_nonlinear_corr$X2))
-
-hidden_impact1 <- c(sum(df1_hidden_impact$X1)/length(df1_hidden_impact$X1),
-              var(df1_hidden_impact$X1),
-              sum(df1_hidden_impact$X2)/length(df1_hidden_impact$X2),
-              var(df1_hidden_impact$X2),
-              cor(df1_hidden_impact$X1,df1_hidden_impact$X2))
-hidden_impact2 <- c(sum(df2_hidden_impact$X1)/length(df2_hidden_impact$X1),
-              var(df2_hidden_impact$X1),
-              sum(df2_hidden_impact$X2)/length(df2_hidden_impact$X2),
-              var(df2_hidden_impact$X2),
-              cor(df2_hidden_impact$X1,df2_hidden_impact$X2))
-hidden_impact3 <- c(sum(df3_hidden_impact$X1)/length(df3_hidden_impact$X1),
-              var(df3_hidden_impact$X1),
-              sum(df3_hidden_impact$X2)/length(df3_hidden_impact$X2),
-              var(df3_hidden_impact$X2),
-              cor(df3_hidden_impact$X1,df3_hidden_impact$X2))
-```
-
-```{r}
-library(knitr)
+#| echo: false
 library(kableExtra)
+cases <- c(
+  "double_snorm","double_unif_narrow","double_unif_wide","norm_exp","snorm_exp","bimodal_snorm","exp_norm","t_snorm","t_norm","t_exp",
+  "linear_corr_snorm","nonlinear_corr","hidden_impact"
+)
+n_reps <- 30  # ile ramek generujemy dla każdego przypadku
 
-# 1. połącz wszystkie wektory w ramkę danych w kolejności, jak w Twoim kodzie
-dist_param <- data.frame(
-  dist = c(
-    rep("double_snorm", 3),
-    rep("double_unif_narrow", 3),
-    rep("double_unif_wide", 3),
-    rep("norm_exp", 3),
-    rep("snorm_exp", 3),
-    rep("pois_snorm", 3),
-    rep("bimodal_snorm", 3),
-    rep("exp_norm", 3),
-    rep("pois_norm", 3),
-    rep("t_snorm", 3),
-    rep("t_norm", 3),
-    rep("t_exp", 3),
-    rep("linear_corr", 3),
-    rep("nonlinear_corr", 3),
-    rep("hidden_impact", 3)
-  ),
-  run = rep(1:3, 15),
-  mean_X1 = c(
-      double_snorm_param1[1], double_snorm_param2[1], double_snorm_param3[1],
-  double_unif_narrow1[1], double_unif_narrow2[1], double_unif_narrow3[1],
-  double_unif_wide1[1], double_unif_wide2[1], double_unif_wide3[1],
-  norm_exp1[1], norm_exp2[1], norm_exp3[1],
-  snorm_exp1[1], snorm_exp2[1], snorm_exp3[1],
-  pois_snorm1[1], pois_snorm2[1], pois_snorm3[1],
-  bimodal_snorm1[1], bimodal_snorm2[1], bimodal_snorm3[1],
-  exp_norm1[1], exp_norm2[1], exp_norm3[1],
-  pois_norm1[1], pois_norm2[1], pois_norm3[1],
-  t_snorm1[1], t_snorm2[1], t_snorm3[1],
-  t_norm1[1], t_norm2[1], t_norm3[1],
-  t_exp1[1], t_exp2[1], t_exp3[1],
-  linear_corr1[1], linear_corr2[1], linear_corr3[1],
-  nonlinear_corr1[1], nonlinear_corr2[1], nonlinear_corr3[1],
-  hidden_impact1[1], hidden_impact2[1], hidden_impact3[1]
-  )
+# --- oczekiwane wartości ---
+expected_mean_x1 <- c(0,
+                                 0,
+                                 0,
+                                 0,
+                                 0,
+                                 #2,
+                                 0.42,
+                                 0.8333,
+                                 #2,
+                                 0,
+                                 0,
+                                 0,
+                                 0,
+                                 3.0802,
+                                 0)
+expected_var_x1  <- c(1,
+                                3,
+                                8.333,
+                                8.41,
+                                1,
+                                #2,
+                                9.4636,
+                                0.694,
+                                #2,
+                                3,
+                                3,
+                                3,
+                                1,
+                                80.5394,
+                                7.3
+                                )
+expected_mean_x2 <-  c(0,
+                                 0,
+                                 0,
+                                 0.8333,
+                                 0.8333,
+                                 #0,
+                                 0,
+                                 0,
+                                 #0,
+                                 0,
+                                 0,
+                                 0.8333,
+                                 0,
+                                 0,
+                                 0)
+expected_var_x2  <- c(1,
+                                3,
+                                8.333,
+                                0.694,
+                                0.694,
+                                #1,
+                                1,
+                                8.41,
+                                #8.41,
+                                1,
+                                8.41,
+                                0.694,
+                                1,
+                                1,
+                                1.97
+                                )
+
+# --- przygotowanie ogólnej ramki do wypełnienia ---
+final_df <- data.frame(
+  Rozklad = cases,
+  mean_X1 = NA_real_,
+  expected_mean_x1 = expected_mean_x1,
+  var_X1_mean = NA_real_,
+  expected_var_x1 = expected_var_x1,
+  mean_X2 = NA_real_,
+  expected_mean_x2 = expected_mean_x2,
+  var_X2_mean = NA_real_,
+  expected_var_x2 = expected_var_x2,
+  stringsAsFactors = FALSE
 )
 
-# 2. Dodaj pozostałe kolumny (wariancje i korelacje)
-dist_param$var_X1 <- c(
-  double_snorm_param1[2], double_snorm_param2[2], double_snorm_param3[2],
-  double_unif_narrow1[2], double_unif_narrow2[2], double_unif_narrow3[2],
-  double_unif_wide1[2], double_unif_wide2[2], double_unif_wide3[2],
-  norm_exp1[2], norm_exp2[2], norm_exp3[2],
-  snorm_exp1[2], snorm_exp2[2], snorm_exp3[2],
-  pois_snorm1[2], pois_snorm2[2], pois_snorm3[2],
-  bimodal_snorm1[2], bimodal_snorm2[2], bimodal_snorm3[2],
-  exp_norm1[2], exp_norm2[2], exp_norm3[2],
-  pois_norm1[2], pois_norm2[2], pois_norm3[2],
-  t_snorm1[2], t_snorm2[2], t_snorm3[2],
-  t_norm1[2], t_norm2[2], t_norm3[2],
-  t_exp1[2], t_exp2[2], t_exp3[2],
-  linear_corr1[2], linear_corr2[2], linear_corr3[2],
-  nonlinear_corr1[2], nonlinear_corr2[2], nonlinear_corr3[2],
-  hidden_impact1[2], hidden_impact2[2], hidden_impact3[2]
-)
+# --- pętla: dla każdego przypadku generujemy 30 ramek i liczymy statystyki ---
+for (i in seq_along(cases)) {
+  case_name <- cases[i]
+  # wektory do przechowywania statystyk z ramek
+  mean_x1_vec <- numeric(n_reps)
+  var_x1_vec  <- numeric(n_reps)
+  mean_x2_vec <- numeric(n_reps)
+  var_x2_vec  <- numeric(n_reps)
+  
+  for (r in 1:n_reps) {
+    # obsługa dodatkowych parametrów: używamy tu domyślne
+    if (case_name == "linear_corr_snorm") {
+      df <- generate_data(case = case_name, rho = 0.8)$df
+    } else if (case_name == "nonlinear_corr") {
+      df <- generate_data(case = case_name, a = 1, b = 1.5)$df
+    } else {
+      df <- generate_data(case = case_name)$df
+    }
+    
+    # liczymy podstawowe statystyki dla utworzonej ramki
+    mean_x1_vec[r] <- mean(df$X1)
+    var_x1_vec[r]  <- var(df$X1)
+    mean_x2_vec[r] <- mean(df$X2)
+    var_x2_vec[r]  <- var(df$X2)
+  }
+  
+  # wypełniamy wiersz wynikowy podając średnie z ramek
+  final_df$mean_X1[i]    <- mean(mean_x1_vec, na.rm = TRUE)   # średnia średnich X1
+  final_df$var_X1_mean[i] <- mean(var_x1_vec, na.rm = TRUE)   # średnia wariancji X1
+  final_df$mean_X2[i]    <- mean(mean_x2_vec, na.rm = TRUE)
+  final_df$var_X2_mean[i] <- mean(var_x2_vec, na.rm = TRUE)
+}
 
-dist_param$mean_X2 <- c(
-  double_snorm_param1[3], double_snorm_param2[3], double_snorm_param3[3],
-  double_unif_narrow1[3], double_unif_narrow2[3], double_unif_narrow3[3],
-  double_unif_wide1[3], double_unif_wide2[3], double_unif_wide3[3],
-  norm_exp1[3], norm_exp2[3], norm_exp3[3],
-  snorm_exp1[3], snorm_exp2[3], snorm_exp3[3],
-  pois_snorm1[3], pois_snorm2[3], pois_snorm3[3],
-  bimodal_snorm1[3], bimodal_snorm2[3], bimodal_snorm3[3],
-  exp_norm1[3], exp_norm2[3], exp_norm3[3],
-  pois_norm1[3], pois_norm2[3], pois_norm3[3],
-  t_snorm1[3], t_snorm2[3], t_snorm3[3],
-  t_norm1[3], t_norm2[3], t_norm3[3],
-  t_exp1[3], t_exp2[3], t_exp3[3],
-  linear_corr1[3], linear_corr2[3], linear_corr3[3],
-  nonlinear_corr1[3], nonlinear_corr2[3], nonlinear_corr3[3],
-  hidden_impact1[3], hidden_impact2[3], hidden_impact3[3]
-)
+# zaokrąglenie
+final_df <- final_df %>% mutate(across(where(is.numeric), ~ round(.x, 4)))
 
-dist_param$var_X2 <- c(
-  double_snorm_param1[4], double_snorm_param2[4], double_snorm_param3[4],
-  double_unif_narrow1[4], double_unif_narrow2[4], double_unif_narrow3[4],
-  double_unif_wide1[4], double_unif_wide2[4], double_unif_wide3[4],
-  norm_exp1[4], norm_exp2[4], norm_exp3[4],
-  snorm_exp1[4], snorm_exp2[4], snorm_exp3[4],
-  pois_snorm1[4], pois_snorm2[4], pois_snorm3[4],
-  bimodal_snorm1[4], bimodal_snorm2[4], bimodal_snorm3[4],
-  exp_norm1[4], exp_norm2[4], exp_norm3[4],
-  pois_norm1[4], pois_norm2[4], pois_norm3[4],
-  t_snorm1[4], t_snorm2[4], t_snorm3[4],
-  t_norm1[4], t_norm2[4], t_norm3[4],
-  t_exp1[4], t_exp2[4], t_exp3[4],
-  linear_corr1[4], linear_corr2[4], linear_corr3[4],
-  nonlinear_corr1[4], nonlinear_corr2[4], nonlinear_corr3[4],
-  hidden_impact1[4], hidden_impact2[4], hidden_impact3[4]
-)
+#print(final_df)
 
-dist_param$cor_X1_X2 <- c(
-  double_snorm_param1[5], double_snorm_param2[5], double_snorm_param3[5],
-  double_unif_narrow1[5], double_unif_narrow2[5], double_unif_narrow3[5],
-  double_unif_wide1[5], double_unif_wide2[5], double_unif_wide3[5],
-  norm_exp1[5], norm_exp2[5], norm_exp3[5],
-  snorm_exp1[5], snorm_exp2[5], snorm_exp3[5],
-  pois_snorm1[5], pois_snorm2[5], pois_snorm3[5],
-  bimodal_snorm1[5], bimodal_snorm2[5], bimodal_snorm3[5],
-  exp_norm1[5], exp_norm2[5], exp_norm3[5],
-  pois_norm1[5], pois_norm2[5], pois_norm3[5],
-  t_snorm1[5], t_snorm2[5], t_snorm3[5],
-  t_norm1[5], t_norm2[5], t_norm3[5],
-  t_exp1[5], t_exp2[5], t_exp3[5],
-  linear_corr1[5], linear_corr2[5], linear_corr3[5],
-  nonlinear_corr1[5], nonlinear_corr2[5], nonlinear_corr3[5],
-  hidden_impact1[5], hidden_impact2[5], hidden_impact3[5]
-)
-
-# 3. zaokrąglenie dla czytelności
-dist_param <- dist_param %>%
-  mutate(across(c(mean_X1, var_X1, mean_X2, var_X2, cor_X1_X2), ~ round(.x, 4)))
-
+kable(final_df, caption = "Empiryczne parametry zmiennych X1 i X2 dla wszystkich rozkładów i powtórzeń") %>%
+  kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover", "condensed"))%>% 
+  row_spec(seq(0, nrow(final_df), by = 1), extra_css = "border-bottom: 2px solid black;")
 
 ```
 
-```{r}
-kable(dist_param, caption = "Empiryczne parametry zmiennych X1 i X2 dla wszystkich rozkładów i powtórzeń") %>%
-  kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover", "condensed")) %>% 
-  row_spec(seq(0, nrow(dist_param), by = 3), extra_css = "border-bottom: 2px solid black;")
-```
+### Co oznaczają poszczególne kolumny?
 
-To daje nam praktyczny wgląd na sposób generowania danych przez dedykowaną funkcję. Widzimy, że rozkłady się zgadzają z założeniami, a tworzone ramki danych są miarodajne. Możemy zatem przejść do dalszych badań.
+Każdy wiersz powyższej tabeli odpowiada jednemu z przypadków symulacyjnych, a każda kolumna przedstawia empiryczne i teoretyczne parametry zmiennych $X_1$ ​ i $X_2$ ​ obliczone na podstawie 30 powtórzeń generowania ramek danych z tymi zmiennymi oraz na podstawie teoretycznych obliczeń odpowiednio.
 
-# Modele regresji dla róznych rozkładów danych i ich wpływ na MSE
+-   `Rozklad` – nazwa przypadku symulacyjnego, np. t_norm, pois_snorm, bimodal_snorm itd.
 
-# !!!KRYTYCZNY BŁĄD DLACZEGO NIE MA SPLITU NA ZBIOR TESTOWY ABY TAM LICZYC MSE PRZECIEZ JAK FITUJEMY MODEL I LICZYMY MSE NA TYCH SAMYCH DANYCH TO BEDZIE OCZYWISTE ZE BEDZIE MALE BO MAMY OVERFITING!!! proponuje spli 80/20 ;)
+-   `mean_X1` – średnia wartość empiryczna zmiennej $X_1$ , obliczona jako średnia ze średnich z 30 wygenerowanych prób
 
-# + W TEJ SEKCJI NIE TYKAMY NIC Z MOICH UKRYTYCH ZMIENNYCH JA TO ROBIE OSOBNO Z CAUSAL ML W MOJEJ SEKCJI
+-   `expected_mean_x1` – teoretyczna wartość oczekiwana zmiennej $X_1$
+
+-   `var_X1_mean` – średnia z oszacowanych wariancji $X_1$ z 30 ramek danych
+
+-   `expected_var_x1` – teoretyczna wariancja zmiennej $X_1$
+
+-   `mean_X2` – średnia empiryczna zmiennej $X_2$ (średnia ze średnich z 30 wygenerowanych ramek danych)
+
+-   `expected_mean_x2` – teoretyczna wartość oczekiwana zmiennej $X_2$
+
+-   `var_X2_mean` – średnia z oszacowanych wariancji $X_2$ z 30 ramek danych
+
+-   `expected_var_x2` – teoretyczna wariancja zmiennej $X_2$
+
+Przypominamy raz jeszcze, że ta sekcja dotyczyła wyłącznie testowania funkcji do generowania danych. Uzyskane w tej sekcji wyniki dają nam praktyczny wgląd na sposób generowania danych przez dedykowaną funkcję. Widzimy, że rozkłady zgadzają się z założeniami, a tworzone ramki danych są miarodajne. Możemy zatem przejść do dalszych badań.
+
+# Modele regresji dla różnych rozkładów danych i ich wpływ na MSE
 
 ## Dlaczego stosujemy modele liniowe `lm()`?
 
 Model `lm()` w R implementuje klasyczną metodę najmniejszych kwadratów (MNK), która znajduje takie współczynniki $\beta$, aby minimalizować sumę kwadratów błędów między wartościami obserwowanymi (Y) a wartościami przewidywanymi przez model $(\hat{Y})$.\
 Oznacza to, że `lm()` szuka prostych (hiperpłaszczyzn) najlepiej dopasowanych do danych w sensie średniokwadratowym (czyli właśnie tego, co mierzy MSE).
 
-W naszym projekcie funkcja prawdziwa ma postać:
-
-$$Y=0.5+X_1+0.6\cdot X_2^2+\epsilon$$To jest model liniowy względem parametrów, ponieważ zależność od $\beta_0$, $\beta_1$, $\beta_2$ jest liniowa (nawet jeśli występuje kwadrat zmiennej $X_2^2$). Dlatego możemy używać `lm()` nawet mimo obecności nieliniowości w zmiennych.
+Funkcja prawdziwa postaci $Y=0.5+X_1+0.6*X_2^2 +\epsilon$ jest modelem liniowym względem parametrów, ponieważ zależność od $\beta_0$, $\beta_1$, $\beta_2$ jest liniowa (nawet jeśli występuje kwadrat zmiennej $X_2^2$). Dlatego możemy używać `lm()` nawet mimo obecności nieliniowości w zmiennych.
 
 ## Dlaczego trzy modele i jakie mają znaczenie?
 
 Wybraliśmy trzy różne modele aby ocenić, jak różny stopień dopasowania modelu do prawdziwej zależności wpływa na wynik metryki MSE.\
 Każdy z modeli reprezentuje inny poziom trafności założeń:
 
-**CZYM JEST `I(X2^2)`W SENSIE TUTAJ TA LITERKA `I`** **przydałoby się wyjaśnienie**
+-   Model **Ideal**: `lm(Y ~ X1 + I(X2^2))` odzwierciedla faktyczną postać funkcji generującej dane (najlepsze możliwe dopasowanie)
 
--   Model 1: `lm(Y ~ X1 + I(X2^2))` odzwierciedla prawdziwą zależność i stanowi punkt odniesienia (najlepsze możliwe dopasowanie),
+-   Model **Simple**: `lm(Y ~ X1 + X2)` jest celowo uproszczony, aby pokazać, jak wzrasta błąd, gdy pominiemy ważny nieliniowy element - służy jako punkt odniesienia.
 
--   Model 2: `lm(Y ~ X1 + X2)` jest celowo uproszczony, aby pokazać, jak wzrasta błąd, gdy pominiemy ważny nieliniowy element
+-   Model **Mixed**: `lm(Y ~ X1 + X2 + I(X1*X2))` model bardziej złożony niż klasyczny model liniowy
 
--   Model 3: `lm(Y ~ X1 + X2 + I(X1*X2))` zawiera dodatkowy czynnik, który nie występuje w rzeczywistej funkcji - pokazuje, jak nadmiarowa złożoność wpływa na stabilność i wartość błędu. **NIE BARDZO KUPUJE TEGO WYJAŚNIENIA TUTAJ**
+`I()` mówi funkcji `lm()` lub innej modelującej funkcji, że to, co jest w środku, ma być zinterpretowane dosłownie jako wyrażenie matematyczne, a nie jako specjalna składnia formuły R.
 
-## **Globalny szum losowy** $\epsilon$
-
-Zmienna epsilon została zdefiniowana globalnie jako:
-
-`epsilon <- rnorm(120, sd = 0.1)`
-
-Stały szum globalny pozwala porównywać MSE między przypadkami, bo każdy model jest „testowany” w identycznych warunkach błędu losowego. Gdyby szum był generowany lokalnie w każdej ramce, to różnice w MSE mogłyby wynikać tylko z "losowego szczęścia" **LOSOWE SZCZESCIE W PROJEKCIE STATYSTYCZNYM??** w generacji szumu, a nie z różnic między rozkładami czy modelami.
-
-Wartość odchylenia standardowego = 0.1 została dobrana tak, żeby błąd nie dominował sygnału tj. żeby można było realnie zobaczyć różnice w dopasowaniu modeli, ale jednocześnie zachować element losowości.
-
-# UWAGI CO DO SAMEGO MSE, NIE JEST TO PORÓWNYWALNE TUTAJ BIORAC POD UWAGE SKALE ROZKLADOW I MOZE BYC WIEKSZE I NIE SWIADCZYC O TYM ZE JEST GORZEJ, TYLKO ZE MAMY BARDZIEJ ROZCHWIANY DATASET WIEC MOZNA NP. DODAAC WARIANCJE XÓW ALBO JE STANDARYZOWAĆ A TO JUŻ BYŁO NA WADZIE!
-
-# WIDZE ZMIENNA N_ITER USTAWIONA NA 200 A MIALO BYC W OPISIE PO 35 RAMEK A NIE 200, CZY JA CZEGOŚ NIE ROZUMIEM?
+## Tworzenie modeli i wyznaczanie MSE
 
 ```{r}
 library(dplyr)
@@ -960,10 +754,8 @@ cases <- c(
   "double_unif_wide",
   "norm_exp",
   "snorm_exp",
-  "pois_snorm",
   "bimodal_snorm",
   "exp_norm",
-  "pois_norm",
   "t_snorm",
   "t_norm",
   "t_exp",
@@ -979,17 +771,66 @@ cases <- c(
 n_iter <- 200
 n_cases <- length(cases)
 n_obs <- 120
+```
 
+```{r}
+# Zapis przykładowych ramek danych (po jednej dla przykładu)
+if (!dir.exists("data_samples")) dir.create("data_samples")
+
+for (case_name in cases) {
+  if (grepl("linear_corr_snorm", case_name)) {
+    rho_val <- as.numeric(sub(".*rho", "", case_name))
+    df_list <- generate_data(case = "linear_corr_snorm", rho = rho_val)
+  } else if (grepl("nonlinear_corr", case_name)) {
+    ab_vals <- regmatches(case_name, gregexpr("[0-9\\.]+", case_name))[[1]]
+    a_val <- as.numeric(ab_vals[1])
+    b_val <- as.numeric(ab_vals[2])
+    df_list <- generate_data(case = "nonlinear_corr", a = a_val, b = b_val)
+  } else {
+    df_list <- generate_data(case = case_name)
+  }
+  df <- df_list$df
+  write.csv(df, paste0("data_samples/", case_name, ".csv"), row.names = FALSE)
+}
+```
+
+### Podział na zbiór treningowy i testowy
+
+Każdy zbiór danych jest dzielony na:
+
+-   80% train - do dopasowania modelu (`lm()`)
+
+-   20% test - do oceny jakości dopasowania (liczymy MSE)
+
+Jeśli policzylibyśmy błąd MSE na tych samych danych, na których model był trenowany, mielibyśmy zaniżony błąd (overfitting).
+
+Podział pozwala realnie ocenić zdolność modelu do generalizacji, czyli jak radzi sobie z nowymi danymi.
+
+W taki sposób podzielone zostały wszystkie ramki danych (200) dla każdego przypadku.
+
+### Rola wariancji zmiennych
+
+MSE wyraża rozproszenie danych od linii regresji.
+
+-   Mniejsze MSE oznacza, że model jest lepiej dopasowany, błędy predykcji są mniejsze
+
+-   Większe MSE oznacza, że model gorzej odwzorowuje zależności w danych.
+
+Należy być jednak ostrożnym, ponieważ MSE jest miarą bezwzględną - w zależności od sytuacji znaczenie wielkości może się zmieniać. Przy analizie konkretnych przypadków będziemy zwracać uwagę również na wariancję zmiennych, która wpływa na wartość błędu średniokwadratowego.
+
+MSE nie jest bezpośrednio porównywalne między przypadkami, jeśli skale $X_{1}$ i $X_2$ różnią się.
+
+Przykładowo dane o dużym rozrzucie np. $X\sim N(0,10)$ mogą mieć naturalnie większe błędy prognozy niż dane z $X \sim N(0,1)$, nawet jeśli dopasowanie względne jest podobne. Dlatego przy analizie należy wziąć pod uwagę wariancję $X$.
+
+```{r}
+# dopasowanie modeli i liczenie MSE
 results_list <- list()
 idx <- 1
 
 for (case_id in 1:n_cases) {
-  
   case_name <- cases[case_id]
-  print(paste("Przypadek:", case_name))
   
   for (i in 1:n_iter) {
-    
     # generowanie danych
     if (grepl("linear_corr_snorm", case_name)) {
       # wyciągamy rho z nazwy, np. z 'rho0.5'
@@ -1007,16 +848,21 @@ for (case_id in 1:n_cases) {
     }
     df <- df_list$df
     
-    m_simple <- lm(Y ~ X1 + X2, data = df)
-    m_ideal  <- lm(Y ~ X1 + I(X2^2), data = df)
-    m_mixed  <- lm(Y ~ X1 + X2 + I(X1 * X2), data = df)
+    # Split 80/20
+    train_idx <- sample(1:nrow(df), size = 0.8 * nrow(df))
+    train <- df[train_idx, ]
+    test <- df[-train_idx, ]
+    
+    m_simple <- lm(Y ~ X1 + X2, data = train)
+    m_ideal  <- lm(Y ~ X1 + I(X2^2), data = train)
+    m_mixed  <- lm(Y ~ X1 + X2 + I(X1 * X2), data = train)
     
     # wyliczanie MSE i zapis współczynników
     models <- list(simple = m_simple, ideal = m_ideal, mixed = m_mixed)
     for (m_name in names(models)) {
       m <- models[[m_name]]      
-      preds <- predict(m, df)
-      mse <- mean((df$Y - preds)^2)
+      preds <- predict(m, newdata=test)
+      mse <- mean((test$Y - preds)^2)
       
       coefs <- coef(m)
       row <- tibble(
@@ -1041,7 +887,23 @@ results_all <- bind_rows(results_list)
 
 # Zapis wyników
 write.csv(results_all, "wyniki_parametry_MSE.csv", row.names = FALSE)
+```
 
+### Statystyki MSE
+
+MSE jest zmienną losową, ponieważ zależy od losowo wygenerowanych danych. Powtarzamy eksperyment 200 razy dla każdego przypadku, co pozwala nam policzyć
+
+-   średnie - przeciętny błąd
+
+-   mediany - błąd "typowy", bardziej odporny na wartości odstające
+
+-   kwartyle Q25 i Q75, które pokazują rozrzut błędów
+
+-   odchylenia standardowe - mówi o zmienności wyników między iteracjami
+
+i ocenić stabilność modelu - czy między iteracjami MSE się waha, czy jest stabilne. Sprawdzamy w ten sposób w jakich rozkładach błędy są największe i jak duże znaczenie w dopasowaniu się do danych miał dobór wzoru modelu.
+
+```{r}
 # Statystyki MSE
 results_summary <- results_all %>%
   group_by(case, model) %>%
@@ -1057,21 +919,20 @@ results_summary <- results_all %>%
   )
 
 write.csv(results_summary, "summary_MSE.csv", row.names = FALSE)
-print(results_summary)
+
+results_summary %>%
+  mutate(across(where(is.numeric), ~round(., 4))) %>%
+  kable(caption = "Statystyki MSE dla poszczególnych przypadków i modeli") %>%
+  kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover", "condensed")) %>%
+  column_spec(1, bold = TRUE) %>%
+  collapse_rows(columns = 1, valign = "middle")
+
 ```
 
-```{r}
-# Wykres: Boxplot MSE
-ggplot(results_all, aes(x = case, y = mse, fill = model)) +
-  geom_boxplot(outlier.size = 0.5) +
-  theme_minimal() +
-  labs(title = "Porównanie MSE dla przypadków i modeli",
-       x = "Przypadek",
-       y = "MSE") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
+Zwróćmy uwagę na średnią wartość MSE. Dla wszystkich przypadków model **Ideal** czyli `lm(Y~X1+I(X2^2))` osiągał najniższe średnie wartości błędu MSE i najmniejszą zmienność błędu, co jest naturalne, ponieważ odpowiada on dokłądnie generującej funkcji. Błąd na poziomie 0.01 jest głównie spowodowany szumem losowym więc jest to najlepsze możliwe dopasowanie. W rzeczywistości jednak, raczej nie znamy funkcji generującej dane, a szukamy modelu, który najlepiej dopasuje się do danych. Tak traktujemy dwa pozostałe modele **Mixed** `lm(Y~X1+X2+I(X1*X2))` i **Simple** `lm(Y~X1+X2)` . Dla tych modeli obserwujemy większe zróżnicowanie wartości MSE - między różnymi rozkładami, ale również w obrębie jednego przykładu. Przyjrzyjmy się kilku przypadkom, aby lepiej zrozumieć skąd te różnice się biorą.
 
 ```{r}
+#| message: false
 # Wykres: średnie MSE (słupki)
 ggplot(results_summary, aes(x = case, y = mean_MSE, fill = model)) +
   geom_col(position = "dodge") +
@@ -1082,92 +943,358 @@ ggplot(results_summary, aes(x = case, y = mean_MSE, fill = model)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
+Z wykresu widzimy, że dla 4 przypadków rozkładów modele mixed i simple poradziły sobie bardzo źle. Dla porównania zestawimy wyniki dla przypadków:
+
+-   `double_unif_narrow` i `double_unif_wide`
+
+-   `t_norm` i `t_snorm`
+
+-   `exp_norm` i `norm_exp`
+
+W tym celu wczytane zostaną dane z 1 ramki dla każdego przykładu
+
 ```{r}
-# Wykresy dopasowania (1 ramka z przypadku)
-for (case_name in cases) {
-  if (grepl("linear_corr_snorm", case_name)) {
-      # wyciągamy rho z nazwy, np. z 'rho0.5'
-      rho_val <- as.numeric(sub(".*rho", "", case_name))
-      df_list <- generate_data(case = "linear_corr_snorm", rho = rho_val)
-      
-    } else if (grepl("nonlinear_corr", case_name)) {
-      # wyciągamy a i b z nazwy, np. z 'a1.5b1'
-      ab_vals <- regmatches(case_name, gregexpr("[0-9\\.]+", case_name))[[1]]
-      a_val <- as.numeric(ab_vals[1])
-      b_val <- as.numeric(ab_vals[2])
-      df_list <- generate_data(case = "nonlinear_corr", a = a_val, b = b_val)
-      
-    } else {
-      df_list <- generate_data(case = case_name)
-    }
-  df <- df_list$df
+#| message: false
+plot_case_fit <- function(case_name) {
+  df <- read.csv(paste0("data_samples/", case_name, ".csv"))
   
-  m1 <- lm(Y ~ X1 + X2, data = df)
-  m2 <- lm(Y ~ X1 + I(X2^2), data = df)
-  m3 <- lm(Y ~ X1 + X2 + I(X1*X2), data = df)
+  set.seed(123)
+  train_idx <- sample(1:nrow(df), size = 0.8 * nrow(df))
+  train <- df[train_idx, ]
+  test <- df[-train_idx, ]
   
-  df$pred_simple <- predict(m1, df)
-  df$pred_ideal  <- predict(m2, df)
-  df$pred_mixed  <- predict(m3, df)
+  m_simple <- lm(Y ~ X1 + X2, data = train)
+  m_ideal  <- lm(Y ~ X1 + I(X2^2), data = train)
+  m_mixed  <- lm(Y ~ X1 + X2 + I(X1 * X2), data = train)
   
-  # wykres dopasowania (Y vs X2)
-  p <- ggplot(df, aes(x = X2, y = Y)) +
-    geom_point(alpha = 0.5) +
-    geom_line(aes(y = pred_simple, color = "Model 1: X1+X2"), linewidth = 0.7) +
-    geom_line(aes(y = pred_ideal, color = "Model 2: X1+X2^2"), linewidth = 0.7) +
-    geom_line(aes(y = pred_mixed, color = "Model 3: X1+X2+X1*X2"), linewidth = 0.7) +
-    scale_color_manual(values = c("darkred", "steelblue", "darkgreen")) +
-    labs(title = paste("Dopasowanie modeli -", case_name),
-         y = "Y", x = "X2", color = "Model") +
+  test$pred_simple <- predict(m_simple, newdata = test)
+  test$pred_ideal  <- predict(m_ideal, newdata = test)
+  test$pred_mixed  <- predict(m_mixed, newdata = test)
+  
+  mse_simple <- mean((test$Y - test$pred_simple)^2)
+  mse_ideal  <- mean((test$Y - test$pred_ideal)^2)
+  mse_mixed  <- mean((test$Y - test$pred_mixed)^2)
+  var_X1 <- var(test$X1)
+  var_X2 <- var(test$X2)
+  var_Y  <- var(test$Y)
+  
+  summary_table <- tibble(
+    case = case_name,
+    var_X1 = var_X1,
+    var_X2 = var_X2,
+    var_Y = var_Y,
+    mse_simple = mse_simple,
+    mse_ideal = mse_ideal,
+    mse_mixed = mse_mixed
+  )
+  
+  # Wykresy
+  p1 <- ggplot(test, aes(x = X1, y = Y)) +
+    geom_point(alpha = 0.5, color = "grey40") +
+    geom_line(aes(y = pred_simple, color = "Simple"), linewidth = 0.8) +
+    geom_line(aes(y = pred_ideal, color = "Ideal"), linewidth = 0.8) +
+    geom_line(aes(y = pred_mixed, color = "Mixed"), linewidth = 0.8) +
+    labs(
+      title = paste("Dopasowanie względem X1"),
+      x = "X1", y = "Y", color = "Model"
+    ) +
     theme_minimal()
   
-  print(p)
+  p2 <- ggplot(test, aes(x = X2, y = Y)) +
+    geom_point(alpha = 0.5, color = "grey40") +
+    geom_line(aes(y = pred_simple, color = "Simple"), linewidth = 0.8) +
+    geom_line(aes(y = pred_ideal, color = "Ideal"), linewidth = 0.8) +
+    geom_line(aes(y = pred_mixed, color = "Mixed"), linewidth = 0.8) +
+    labs(
+      title = paste("Dopasowanie względem X2"),
+      x = "X2", y = "Y", color = "Model"
+    ) +
+    theme_minimal()
+  
+  print(case_name)
+  
+  grid.arrange(p1, p2, ncol = 2)
+  
+  summary_table %>%
+    kbl(caption = paste("Statystyki dla przypadku:", case_name)) %>%
+    kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"),
+                  full_width = FALSE)
+}
+
+```
+
+```{r}
+#| message: false
+plot_pred_vs_actual <- function(case_name) {
+  df <- read.csv(paste0("data_samples/", case_name, ".csv"))
+  
+  set.seed(123)
+  train_idx <- sample(1:nrow(df), size = 0.8 * nrow(df))
+  train <- df[train_idx, ]
+  test <- df[-train_idx, ]
+  
+  m_simple <- lm(Y ~ X1 + X2, data = train)
+  m_ideal  <- lm(Y ~ X1 + I(X2^2), data = train)
+  m_mixed  <- lm(Y ~ X1 + X2 + I(X1 * X2), data = train)
+  
+  # Predykcje
+  test$pred_simple <- predict(m_simple, newdata = test)
+  test$pred_ideal  <- predict(m_ideal, newdata = test)
+  test$pred_mixed  <- predict(m_mixed, newdata = test)
+  
+  # Obliczanie MSE
+  mse_simple <- mean((test$Y - test$pred_simple)^2)
+  mse_ideal  <- mean((test$Y - test$pred_ideal)^2)
+  mse_mixed  <- mean((test$Y - test$pred_mixed)^2)
+  
+  # Pomocnicza funkcja do tworzenia wykresu dla jednego modelu
+  make_plot <- function(pred_col, model_name, mse_value, color) {
+    ggplot(test, aes(x = Y, y = !!sym(pred_col))) +
+      geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "black") +
+      geom_segment(aes(xend = Y, yend = !!sym(pred_col)), alpha = 0.4, color = color) +
+      geom_point(color = color, size = 1.5) +
+      labs(
+        title = paste("Model", model_name),
+        subtitle = sprintf("MSE = %.4f", mse_value),
+        x = "Prawdziwy Y",
+        y = "Przewidziany Ŷ"
+      ) +
+      theme_minimal() +
+      coord_equal()
+  }
+  
+  # Trzy wykresy obok siebie
+  p1 <- make_plot("pred_simple", "Simple", mse_simple, "darkred")
+  p2 <- make_plot("pred_ideal", "Ideal", mse_ideal, "steelblue")
+  p3 <- make_plot("pred_mixed", "Mixed", mse_mixed, "darkgreen")
+  
+  print(case_name)
+  
+  grid.arrange(p1, p2, p3, nrow = 1)
+}
+
+```
+
+### Double Uniform Narrow vs. Double Uniform Wide
+
+Obie wersje mają ten sam rodzaj rozkładu - jednostajny - ale różny zakres:
+
+-   narrow: $X_i \sim U(-3,3)$
+
+-   wide: $X_i \sim U(-5,5)$
+
+```{r}
+#| message: false
+plot_case_fit("double_unif_narrow")
+
+```
+
+```{r}
+#| message: false
+plot_pred_vs_actual("double_unif_narrow")
+
+```
+
+Na podstawie powyższego wykresu scatterplot możemy powiedzieć jak dobrze model dopasowuje się do danych. Im bliżej linii $\hat{Y} = Y$ znajdują się punkty przedstawiające wartości przewidywane, tym lepszy jest model. Widać wyraźnie, że model **Ideal** "rzuca" przewidywania w większości pokrywające się z prawdziwymi wartościami.
+
+```{r}
+#| message: false
+diagnose_model <- function(case_name) {
+  df <- read.csv(paste0("data_samples/", case_name, ".csv"))
+  
+  model <- lm(Y ~ X1 + I(X2^2), data = df)
+  
+  par(mfrow = c(2, 2))
+  plot(model, main = paste("Diagnostyka modelu:", case_name))
+  par(mfrow = c(1, 1)) 
 }
 ```
 
 ```{r}
-
-# Diagnostyka modelu (dla jednej ramki z każdego przypadku)
-for (case_name in cases) {
-  
-  # generowanie danych z odpowiednimi parametrami
-  if (grepl("linear_corr_snorm", case_name)) {
-      # wyciągamy rho z nazwy, np. z 'rho0.5'
-      rho_val <- as.numeric(sub(".*rho", "", case_name))
-      df_list <- generate_data(case = "linear_corr_snorm", rho = rho_val)
-      
-    } else if (grepl("nonlinear_corr", case_name)) {
-      # wyciągamy a i b z nazwy, np. z 'a1.5b1'
-      ab_vals <- regmatches(case_name, gregexpr("[0-9\\.]+", case_name))[[1]]
-      a_val <- as.numeric(ab_vals[1])
-      b_val <- as.numeric(ab_vals[2])
-      df_list <- generate_data(case = "nonlinear_corr", a = a_val, b = b_val)
-  } else {
-    df_list <- generate_data(case = case_name)
-  }
-  
-  df <- df_list$df
-  
-  # dopasowanie modelu
-  model <- lm(Y ~ X1 + I(X2^2), data = df)
-  
-  # wykresy diagnostyczne
-  par(mfrow = c(2, 2))
-  plot(model, main = paste("Diagnostyka modelu:", case_name))
-}
-
-
+#| message: false
+diagnose_model("double_unif_narrow")
 ```
 
-## Zmienne ukryte - analia wpływu na model
+Dla idealnie dopasowanego modelu wykres **Residuals vs Fitted** (reszty względem wartości dopasowanych) nie powinien wykazywać żadnego widocznego wzoru. Punkty powinny być rozmieszczone losowo wokół osi poziomej. Jeśli natomiast zauważylibyśmy np. kształt przypominający parabolę, mogłoby to oznaczać, że zależność między zmiennymi nie jest liniowa.\
+W naszym przypadku punkty są rozproszone nieregularnie, co sugeruje, że przyjęty model liniowy jest odpowiedni.
 
-### Intuicja - przykład z Paryża
+Wykres **Normal Q-Q** służy do oceny, czy reszty (błędy) mają rozkład normalny. Jeśli pochodzą z rozkładu normalnego, punkty powinny układać się wzdłuż prostej przerywanej.\
+W rozważanym przypadku obserwujemy, że punkty przebiegają wzdłuż tej linii, co potwierdza, że błędy mają rozkład zbliżony do normalnego.
 
-Pani Profesor [**Julie Josse**](https://juliejosse.com/) na zimowej szkole z Causality i XAI w Srobonne University, przedstawiła problem zmiennych ukrytych w bardzo intuicyjny i zabawny sposób aby zrozumieć dlaczego jest to istotne i czemu same mlowe i statystyczne podejście może nas zawieść. Możemy np. dowieść statystycznie że spanie w butach powoduje ból głowy następnego dnia, i dowiodła to testem statystycznym z danych że ta korelacja jest istotna, lecz w danych nie mieliśmy informacji o tym że dana osoba spożyła spore ilości alkoholu przed który miał wpływ na jej upicie alkoholowe dzięki któremu po powrocie do domu z imprezy nie była w stanie zdjąć butów i poszła spać a rano obudziłą się z kacem, tego nam same dane nie powiedzą i potrzebujemy causal approach, posłużyłem się chatem gpt do wygenerowania poniższej grafiki w celu ilustracji abyśmy zrozumieli lepiej graf przyczynowo skutkowo korelacyjny (chat nie mógł zrozumieć prawidłowo kierunku strzałek więc zostawiam grafikę tak jak ja wygenerował :D)
+Wykres **Scale-Location** (znany też jako Spread-Location) pokazuje, czy wariancja błędów jest stała (homoscedastyczność). Jeśli czerwona linia trendu jest prawie pozioma, a punkty są równomiernie rozproszone, możemy uznać, że założenie jednorodności wariancji jest spełnione.
+
+Wykres **Residuals vs Leverage** pomaga zidentyfikować obserwacje wpływowe, czyli takie, które znacząco oddziałują na estymowane parametry modelu. Punkty znajdujące się poza liniami Cook’s distance (zaznaczonymi przerywanymi liniami) są potencjalnie wpływowe - ich usunięcie mogłoby istotnie zmienić dopasowanie modelu.\
+Nasz model nie posiada potencjalnie wpływowych obserwacji.
+
+------------------------------------------------------------------------
+
+```{r}
+#| message: false
+plot_case_fit("double_unif_wide")
+```
+
+```{r}
+#| message: false
+plot_pred_vs_actual("double_unif_wide")
+```
+
+```{r}
+#| message: false
+diagnose_model("double_unif_wide")
+```
+
+Z powyższych wykresów możemy wyciągnąć podobne wnioski co w przypadku `double_unif_narrow`.
+
+| "double_unif" model | narrow | wide   |
+|---------------------|--------|--------|
+| Simple              | 3.121  | 23.947 |
+| Ideal               | 0.011  | 0.009  |
+| Mixed               | 2.858  | 28.41  |
+
+Model idealny w obu przypadkach ma bardzo niskie MSE, a to oznacza, że poprawnie odwzorowuje funkcję generującą dane niezależnie od zakresu zmiennych.
+
+Natomiast modele **Simple** i **Mixed** mają MSE znacznie większe dla „wide”, ponieważ wartości $X_2$ i $X_1$ są rozrzucone szerzej, co skutkuje większym zróżnicowaniem wartości $Y$, a przez to większymi błędami predykcji - bo błędy kwadratowe $(Y - \hat{Y})^2$ rosną szybciej, im większy rozrzut (wariancja $X_1$, $X_2$). Wartości $Y$ też przyjmują większy zakres, bo są funkcją $X_1$ i $X_2$.
+
+Wariancje zmiennych $X_1$ i $X_2$ w przypadkach narrow i wide różnią się kilkukrotnie. To oznacza, że skala błędów w modelach prostych (Simple, Mixed) rośnie proporcjonalnie do rozrzutu zmiennych, ponieważ MSE jest miarą bezwzględną, a nie znormalizowaną.
+
+Sama skala i wariancja zmiennych wpływa na wartość MSE, nawet jeśli dopasowanie względne (np. $R^2$) jest podobne. Dlatego MSE nie jest bezwzględnie porównywalne między przypadkami o różnych skalach danych.
+
+(Współczynnik determinacji $R^2$ pokazuje, jak dobrze model wyjaśnia zmienność danych niezależnie od ich skali. MSE natomiast rośnie wraz ze skalą i wariancją zmiennych, dlatego przy porównywaniu modeli dla różnych rozkładów bardziej miarodajne jest porównanie $R^2$ niż samych wartości MSE.
+
+------------------------------------------------------------------------
+
+### Przykład z rozkładem t-Studenta (cięższe ogony)
+
+Porównujemy `t_norm` i `t_snorm`, dla których w obu przypadkach $X_1 \sim t(3)$ czyli są to rozkłady t-Studenta z 3 stopniami swobody. Natomiast wariancja $X_2$ się różni. `t_snorm` $X_2 \sim N(0,1)$, a `t_snorm` $X_2 \sim N(0,2.9)$
+
+Dla `t_snorm` obie zmienne mają umiarkowany rozrzut. Zmienna $X_2$ w `t_norm` ma znacznie większe odchylenie standardowe, co oznacza, że dane są bardziej rozproszone w przestrzeni.
+
+```{r}
+#| message: false
+plot_case_fit("t_norm")
+```
+
+```{r}
+#| message: false
+plot_pred_vs_actual("t_norm")
+```
+
+```{r}
+#| message: false
+diagnose_model("t_norm")
+```
+
+```{r}
+#| message: false
+plot_case_fit("t_snorm")
+```
+
+Dla `t_snorm` wartości $X_2$ są małe (blisko zera), więc składnik $X_2^2$ nie ma dużego wpływu na $Y$ -\> Model łatwo się dopasowuje, błędy są małe.
+
+Dla t_norm, wartości $X_2$ ​są dużo większe - kwadrat rośnie szybko więc różnice w $Y$ są dużo większe -\> nawet mały błąd prognozy $\hat{Y}$ przekłada się na duży błąd kwadratowy, dlatego MSE rośnie wykładniczo wraz z rozrzutem zmiennych.
+
+| model  | t_snorm | t_norm  |
+|--------|---------|---------|
+| Simple | 0.446   | 141.746 |
+| Ideal  | 0.01    | 0.01    |
+| Mixed  | 0.46    | 147.152 |
+
+```{r}
+#| message: false
+plot_pred_vs_actual("t_snorm")
+```
+
+```{r}
+#| message: false
+diagnose_model("t_snorm")
+```
+
+W *t_norm* zobaczymy większy rozrzut reszt, co wskazuje na heteroskedastyczność (rosnącą wariancję błędów przy większych wartościach X2).
+
+Wariant `t_norm` ma znacznie większy rozrzut - większą wariancję $X_2$ i cięższe ogony $X_1$. Oznacza to, że w danych częściej pojawiają się wartości skrajne (outliery), przez co błędy kwadratowe przy modelach niedopasowanych (Simple, Mixed) są ekstremalnie duże.
+
+Dla modelu Ideal różnice są niewielkie, bo model dokładnie odzwierciedla funkcję generującą dane. Dla modeli Simple i Mixed MSE dla `t_norm` jest kilkaset razy większe, mimo że dopasowanie względne (np. $R^2$ ) może być podobne.
+
+To dowód, że MSE jest wrażliwe na skalę danych i nie nadaje się do bezpośredniego porównywania między przypadkami o różnych wariancjach.
+
+Wniosek: Rozkłady z większą wariancją lub cięższymi ogonami (np. t-Studenta, szeroki uniform) powodują znaczne zwiększenie MSE przy modelach uproszczonych, mimo identycznego modelu funkcji.
+
+------------------------------------------------------------------------
+
+### Norm_exp i exp_norm
+
+Przy `norm_exp` $X_1 \sim N(0, 2.9)$ i $X_2 \sim Exp(1.2)$. Więc jedna zmienna jest symetryczna, a druga skośna w prawo.
+
+```{r}
+#| message: false
+plot_case_fit("norm_exp")
+```
+
+```{r}
+#| message: false
+plot_pred_vs_actual("norm_exp")
+```
+
+Oczywiście obserwujemy bardzo dobre dopasowanie modelu **Ideal**, ale co ciekawe modele **Mixed** i **Simple** mają małe MSE. Wynika to z zakresu i rozkładu $X_2$:
+
+$X_2$ z rozkładu wykładniczego o $\lambda =1.2$ przyjmuje małe wartości (średnio ok. 0.83), a większe wartości są bardzo rzadkie. W tym zakresie $X_2^2 \approx X_2$ (bo przy małych wartościach, kwadrat nie zmienia dużo.
+
+Czyli model $Y \sim X_1 +X_2$ nie „widzi” mocno nieliniowości - i mimo że teoretycznie jest źle określony, praktycznie dopasowuje się bardzo dobrze, bo dane nie pokazują dużych odchyleń od liniowości.
+
+Model $Y \sim X_1 +X_2+X1\cdot X2$ osiągnął wartość MSE bardzo podobną do Simple. Składnik $X1\cdot X2$ jest niepotrzebny, jednak nie ma on dużego wpływu na model, jeśli jego współczynnik jest mały.
+
+```{r}
+#| message: false
+diagnose_model("norm_exp")
+```
+
+-   **Residuals vs Fitted:**\
+    Widoczny lekki wzór - reszty nie są całkowicie losowe, co sugeruje,\
+    że model liniowy może nie do końca uchwycić nieliniową zależność generowaną przez $X_2^2$.
+-   **Scale-Location:**\
+    Czerwona linia jest pozioma i punkty równomiernie rozrzucone - wariancje są jednorodne.
+-   **Residuals vs Leverage:**\
+    Pojedyncze punkty blisko granicy - czyli dane z długiego ogona rozkładu wykładniczego\
+    mają większy wpływ na dopasowanie.
+
+W przypadku `exp_norm` $X_1 \sim Exp(1.2)$ i $X_2 \sim N(0, 2.9)$
+
+```{r}
+#| message: false
+plot_case_fit("exp_norm")
+```
+
+```{r}
+#| message: false
+plot_pred_vs_actual("exp_norm")
+```
+
+Gdy zamienimy rozkłady, z których pochodzą zmienne objaśniające, drastycznie zwiększa się wartość błędu średniokwadratowego dla modeli **Simple** i **Mixed**.
+
+W tym wypadku składnik $0.6\cdot X_2^2$ ma szeroki rozrzut. Składnik $0.6\cdot X_2^2$ dominuje w Y, czego prosty model liniowy nie jest w stanie uchwycić.
+
+```{r}
+#| message: false
+diagnose_model("exp_norm")
+```
+
+Model nie w pełni dopasował się do liniowej zależności w danych - punkty na 1. wykresie są skupione w okolicach 0.
+
+Dla dużych wartości przewidywanych model ma większy rozrzut błędów -\> heteroscedastyczność. Model lepiej radzi sobie dla małych Y, gorzej dla dużych.
+
+Większość punktów ma bardzo małą dźwignię, model nie posiada obserwacji wpływowych.
+
+Oznacza to, że **zamiana rozkładów zmiennych objaśniających może diametralnie zmienić charakter zależności i dopasowanie modeli**, nawet jeśli sama struktura wzoru pozostaje taka sama.
+
+# Zmienne ukryte - analiza wpływu na model
+
+## Intuicja - przykład z Paryża
+
+Pani Profesor [**Julie Josse**](https://juliejosse.com/) na zimowej szkole z Causality i XAI w Srobonne University, przedstawiła problem zmiennych ukrytych w bardzo intuicyjny i zabawny sposób aby zrozumieć dlaczego jest to istotne i czemu same mlowe i statystyczne podejście może nas zawieść. Możemy np. dowieść statystycznie, że spanie w butach powoduje ból głowy następnego dnia. Pani Profesor dowiodła to testem statystycznym z danych, że ta korelacja jest istotna. W danych nie mieliśmy jednak informacji o tym, że dana osoba spożyła wcześniej spore ilości alkoholu, który sprawił, że po powrocie do domu z imprezy nie była w stanie zdjąć butów i poszła spać. Rano obudziła się z kacem - tego nam same dane nie powiedzą i potrzebujemy causal approach. Posłużyłem się chatem gpt do wygenerowania poniższej grafiki w celu ilustracji, abyśmy zrozumieli lepiej graf przyczynowo skutkowo korelacyjny (chat nie mógł zrozumieć prawidłowo kierunku strzałek więc zostawiam grafikę tak jak ja wygenerował :D).
 
 ![](ProjektZAnalizyDanych_files/figure-html/image_xai.png){fig-cap="Korelacja ≠ przyczynowość" width="80%"}
 
-Przechodząc do konkretnego przypadku naszego projektru w tym podrozdziale badamy przypadek, w którym nieobserwowana zmienna $Z$ oddziałuje zarówno na zmienne $X1, X2$jak i na zmienną objaśnianą $Y$ Taki układ powoduje:
+Przechodząc do konkretnego przypadku naszego projektu w tym podrozdziale badamy przypadek, w którym nieobserwowana zmienna $Z$ oddziałuje zarówno na zmienne $X1, X2$jak i na zmienną objaśnianą $Y$ Taki układ powoduje:
 
 -   zależność pomiędzy $X1$ i $X2$
 
@@ -1177,7 +1304,7 @@ Przechodząc do konkretnego przypadku naszego projektru w tym podrozdziale badam
 
 -   Ponieważ $Z$ nie jest w rozpatrywanej ramce danych, pokażemy, jak jego wpływ widoczny jest pośrednio: w strukturze predyktorów oraz w resztach modeli oraz w zmianie MSE.
 
-Zbadajmy to jaki "cień" zostawiłą w naszych zmiennych $X-owych$ nieznana zmienna $Z$ za pomocą techniki PCA (analizy głównych składowych) a jak wiemy główną składową każdej z zmiennych $X-owych$ jest ukryta i bardzo tajemnicza zmienna $Z$
+Zbadajmy to jaki "cień" zostawiła w naszych zmiennych $X-owych$ nieznana zmienna $Z$ za pomocą techniki PCA (analizy głównych składowych) a jak wiemy główną składową każdej z zmiennych $X-owych$ jest ukryta i bardzo tajemnicza zmienna $Z$
 
 Czy widać tak naprawdę wpływ zmiennej $Z$ na zmienne $X-owe$?
 
@@ -1254,7 +1381,7 @@ pc1_all <- purrr::imap_dfr(dfs, function(dfi, nm){
 
 facet_labels <- pc1_all %>%
   distinct(zbior, var_expl) %>%
-  mutate(label = paste0(zbior, " — PC1: ", percent(var_expl, accuracy = 0.1))) %>%
+  mutate(label = paste0(zbior, " - PC1: ", percent(var_expl, accuracy = 0.1))) %>%
   { setNames(.$label, .$zbior) }
 
 
@@ -1279,7 +1406,7 @@ pc1_hist
 
 Wniosek z wykresu jest widoczny gołym okiem ponieważ 100% udziału wskazuje że cała zmienność zmiennych $X1$ i $X2$ leży w jednym kierunku. Co potwierdza wniosek z poprzedniej powyższej tabeli.
 
-#### **Dlaczego to ważne w kontekście causal approach?**
+### **Dlaczego to ważne w kontekście causal approach?**
 
 Gdy PC1 wyjaśnia bardzo dużo wariancji, mamy silne przesłanki, że w danych działa nieobserwowany czynnik.
 
@@ -1287,7 +1414,7 @@ W takiej sytuacji modele regresji bez tego czynnika będą zostawiać strukturę
 
 To uzasadnia, dlaczego w praktyce warto szukać proxy (zmiennych zastępczych) lub instrumentów żeby zredukować wpływ pominiętej zmiennej.
 
-#### Waliadcja Krzyżowa modeli z ukrytą zmienną wpływową
+### Walidcja Krzyżowa modeli z ukrytą zmienną wpływową
 
 Ustalmy dwie formy modelu którymi będziemy się posługiwać w dalszych rozważaniach
 
@@ -1421,12 +1548,134 @@ p_cv_bar <- ggplot(cv_tbl, aes(x = model, y = CV_MSE, fill = model)) +
 p_cv_bar
 ```
 
-### Co z tego wynika dla causal approach?
+## Co z tego wynika dla causal approach?
 
 -   Specyfikacja modelu ma pierwszorzędne znaczenie. Sama obecność nieobserwowanej $Z$ nie musi niszczyć jakości predykcji, jeśli informacja o $Z$ jest „pośrednio zakodowana” w $X$ i uchwycona właściwą postacią
 
 -   Brak właściwej postaci ma wpływ duży koszt generalizacji. `simple` traci nie dlatego, że nie widzi $Z$, tylko dlatego, że źle modeluje zależność $Y$ do $X$.
 
-#### Podsumowanie sekcji zmiennych ukrytych
+### Podsumowanie sekcji zmiennych ukrytych
 
 Konkluzja. W naszym skrajnym scenariuszu *hidden_impact* dominująca struktura w $X$ (PC1 ≈ cień $Z$) oraz CV-MSE pokazują, że kluczowa jest prawidłowa postać funkcjonalna względem obserwowalnych cech; dopiero gdy po jej uwzględnieniu reszty nadal są skorelowane z proxy-Z i CV-MSE pozostaje wysokie, sensowne jest inwestowanie w dodatkowe zmienne/proxy/instrumenty.
+
+```{r}
+#| message: false
+plot_case_fit2 <- function(case_name) {
+  df <- read.csv(paste0("data_samples/", case_name, ".csv"))
+  
+  set.seed(123)
+  train_idx <- sample(1:nrow(df), size = 0.8 * nrow(df))
+  train <- df[train_idx, ]
+  test <- df[-train_idx, ]
+  
+  m_simple <- lm(Y ~ X1 + X2, data = train)
+  m_ideal  <- lm(Y ~ X1 + I(X2^2), data = train)
+  m_mixed  <- lm(Y ~ X1 + X2 + I(X1 * X2), data = train)
+  
+  test$pred_simple <- predict(m_simple, newdata = test)
+  test$pred_ideal  <- predict(m_ideal, newdata = test)
+  test$pred_mixed  <- predict(m_mixed, newdata = test)
+  
+  mse_simple <- mean((test$Y - test$pred_simple)^2)
+  mse_ideal  <- mean((test$Y - test$pred_ideal)^2)
+  mse_mixed  <- mean((test$Y - test$pred_mixed)^2)
+  var_X1 <- var(test$X1)
+  var_X2 <- var(test$X2)
+  var_Y  <- var(test$Y)
+  
+  summary_table <- tibble(
+    case = case_name,
+    var_X1 = var_X1,
+    var_X2 = var_X2,
+    var_Y = var_Y,
+    mse_simple = mse_simple,
+    mse_ideal = mse_ideal,
+    mse_mixed = mse_mixed
+  )
+  
+  # Wykresy
+  p1 <- ggplot(test, aes(x = X1, y = Y)) +
+    geom_point(alpha = 0.5, color = "grey40") +
+    geom_line(aes(y = pred_simple, color = "Simple"), linewidth = 0.8) +
+    geom_line(aes(y = pred_ideal, color = "Ideal"), linewidth = 0.8) +
+    #geom_line(aes(y = pred_mixed, color = "Mixed"), linewidth = 0.8) +
+    labs(
+      title = paste("Dopasowanie względem X1"),
+      x = "X1", y = "Y", color = "Model"
+    ) +
+    theme_minimal()
+  
+  p2 <- ggplot(test, aes(x = X2, y = Y)) +
+    geom_point(alpha = 0.5, color = "grey40") +
+    geom_line(aes(y = pred_simple, color = "Simple"), linewidth = 0.8) +
+    geom_line(aes(y = pred_ideal, color = "Ideal"), linewidth = 0.8) +
+    #geom_line(aes(y = pred_mixed, color = "Mixed"), linewidth = 0.8) +
+    labs(
+      title = paste("Dopasowanie względem X2"),
+      x = "X2", y = "Y", color = "Model"
+    ) +
+    theme_minimal()
+  
+  print(case_name)
+  
+  grid.arrange(p1, p2, ncol = 2)
+  
+  summary_table %>%
+    kbl(caption = paste("Statystyki dla przypadku:", case_name)) %>%
+    kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"),
+                  full_width = FALSE)
+}
+
+plot_case_fit2("hidden_impact")
+```
+
+```{r}
+#| message: false
+diagnose_model("hidden_impact")
+```
+
+# Podsumowanie
+
+## Generowanie danych
+
+Zdefiniowano “prawdziwą” funkcję generującą Y oraz globalny szum (ten sam poziom dla wszystkich scenariuszy), co umożliwia porównywanie MSE między przypadkami.
+
+Rozkłady predyktorów: normalne (różne wariancje), jednostajne (wąskie/szerokie), wykładnicze, Poissona, t-Studenta, mieszane (w tym bimodalne) i kombinacje asymetryczne/ciężkoogonowe.
+
+## Modele i walidacja
+
+Budowano modele dopasowane do struktury danych (proste vs „idealne” względem mechanizmu) i porównywano CV-MSE (K=5) wraz z przedziałami ufności.
+
+Globalny szum utrzymywał wspólną skalę błędu, więc różnice w MSE wynikały głównie z rozkładów, postaci funkcjonalnej i obecności/siły Z.
+
+## Wpływ rozkładu na MSE
+
+Rozkłady skośne i ciężkoogonowe (t-Student, wykładniczy, mieszane) zwiększają MSE i jego zmienność między foldami; modele są bardziej czułe na obserwacje skrajne.
+
+Niedopasowanie postaci funkcjonalnej (np. pominięcie nieliniowości) podnosi MSE silniej niż sama zmiana rozkładu – to koszt uogólniania.
+
+Standaryzacja i rozsądny wybór featurów stabilizują MSE, ale nie kompensują błędnej postaci modelu.
+
+## Zmienna ukryta
+
+Z wprowadzono jako wspólną przyczynę, konstruowano proxy-Z (np. komponent główny).
+
+## Kluczowe obserwacje:
+
+Specyfikacja modelu decyduje – poprawna postać potrafi „pośrednio” uchwycić wpływ Z i obniżyć MSE nawet bez jawnego Z.
+
+Gdy wpływ Z jest dominujący, warto inwestować w dodatkowe zmienne/proxy/instrumenty; gdy dominuje błąd postaci, najpierw naprawiamy formę modelu.
+
+Różnice MSE między modelem prostym a „idealnym” są czytelne i stabilne, co potwierdza powyższe tezy.
+
+## Epsilon progresu – realizacja
+
+Diana Morzhak – pokazała, że wrażliwość MSE na strukturę danych jest użyteczną analogią do mechanizmów predictive coding
+
+Mateusz Walo – przeprowadził causal approach: izolowanie efektu nieobserwowalnego czynnika, budowa proxy-Z, nadzorowanie i koordynowania prac i terminów realizacji projektu
+
+Dominika Zydorczyk – usystematyzowała interpretację i komunikację wyników MSE dla różnych rozkładów/błędów, pokazując jak metryka odzwierciedla dopasowanie i kiedy myli modelarza.
+
+## Podsumowanie generalne
+
+Zespół w krótkim czasie wykonał dużo pracy: od przemyślanego generatora danych, przez rzetelną walidację, po klarowne wnioski – każdy dowiózł swój epsilon progres, a razem osiągnęliśmy dojrzałe rozumienie, jak i dlaczego MSE zachowuje się tak, jak obserwowaliśmy.
